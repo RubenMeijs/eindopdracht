@@ -70,7 +70,7 @@ class Expression():
     
     def __pow__(self,other):
         return PowNode(self,other)
-    # TODO: other overloads, such as __sub__, __mul__, etc.
+    # Done: other overloads, such as __sub__, __mul__, etc.
     
     # basic Shunting-yard algorithm
     def fromString(self, string):
@@ -85,24 +85,37 @@ class Expression():
         
         # list of operators
         oplist = ['+','-', '*', '/','**']
-        
+        #order_op index 0 is order, index 1 is associativity (0=left, 1=right)
+        order_op = {'+':[1,0],'-':[1,0], '*':[2,0], '/':[2,0],'**':[3,1]}
         for token in tokens:
+            
             if isnumber(token):
                 # numbers go directly to the output
                 if isint(token):
                     output.append(Constant(int(token)))
                 else:
                     output.append(Constant(float(token)))
+                
             elif token in oplist:
                 # pop operators from the stack to the output until the top is no longer an operator
+                
                 while True:
                     # TODO: when there are more operators, the rules are more complicated
                     # look up the shunting yard-algorithm
                     if len(stack) == 0 or stack[-1] not in oplist:
+                        
                         break
-                    output.append(stack.pop())
+                    
+                    if (order_op[token][1]==0 and order_op[token][0] <= order_op[stack[-1]][0]
+                        ) or (order_op[token][1]==1 and order_op[token][0]<order_op[stack[-1]][0]):
+                        
+                        output.append(stack.pop())
+                    else:
+                        break
+                    # output.append(stack.pop())
                 # push the new operator onto the stack
                 stack.append(token)
+                
             elif token == '(':
                 # left parantheses go to the stack
                 stack.append(token)
