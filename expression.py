@@ -208,25 +208,6 @@ class BinaryNode(Expression):
         
         #ik moet opnieuw de order of operation opstellen, dat moet sneller kunnen
         
-    # def infix(self,upper_prio = 0, rhs_of_lassoc = False):
-        
-    #     order_op = {'+':[1,False],'-':[1,True], '*':[2,False], '/':[2,True],'**':[3,True]}
-    #     lstring =str(self.lhs)
-    #     rstring =str(self.rhs)
-    #     manupilatie = self.op_symbol
-        
-    #     prio, lassoc = order_op[manupilatie]
-        
-    #     rhand = self.infix(prio, lassoc)
-    #     lhand = self.infix(prio)
-        
-    #     string = "%s %s %s" % (lhand, manupilatie, rhand)
-        
-    #     if prio < upper_prio or (prio == upper_prio and rhs_of_lassoc):
-    #         string = "(" + string + ")"
-    #         return string
-        
-    #     return(string)
     
     def __str__(self):
         
