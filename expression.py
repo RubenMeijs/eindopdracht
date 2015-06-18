@@ -138,7 +138,7 @@ class Expression():
         while len(stack) > 0:
             output.append(stack.pop())
 
-        print(output)
+        
         # convert RPN to an actual expression tree
         for t in output:
             if t in oplist:
