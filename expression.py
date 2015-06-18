@@ -97,6 +97,12 @@ class Expression():
                     output.append(Constant(int(token)))
                 else:
                     output.append(Constant(float(token)))
+                    
+            #brain fart komma's worden natuurlijk niet gebruikt om decimalen aan te geven xD        
+            # elif token == ',':
+                
+            #     while stack[-1] != '(' or len(stack)==0:
+            #         output.append(stack.pop())
                 
             elif token in oplist:
                 # pop operators from the stack to the output until the top is no longer an operator
@@ -164,7 +170,8 @@ class Constant(Expression):
     """Represents a constant value"""
     def __init__(self, value):
         self.value = value
-        
+    
+    #waarom hebben we deze functie nodig?    
     def __eq__(self, other):
         if isinstance(other, Constant):
             return self.value == other.value
@@ -181,8 +188,8 @@ class Constant(Expression):
     def __float__(self):
         return float(self.value)
         
-    def evaluate(self):
-        return float(self.value)
+    def evaluate(self,variabelen):
+        return self.value
         
         
 class Variable(Expression):
@@ -193,8 +200,19 @@ class Variable(Expression):
     def __str__(self):
         return str(self.teken)
     
-    def evaluate(self):
-        
+    
+    # waarom hebben we een equal functie nodig?
+    def __eq__(self,other):
+        if isinstance(other, Variable):
+            return self.teken == other.teken
+        else:
+            return False
+            
+    def evaluate(self,variabelen):
+        if self.teken in variabelen:
+            return variabelen[self.teken]
+        else:
+            return str(self.teken)
         
     
 
@@ -248,15 +266,23 @@ class BinaryNode(Expression):
         
     def evaluate(self, variabelen={}):
         
-        getal1 = float(self.lhs.evaluate(variabelen))
-        getal2 = float(self.rhs.evaluate(variabelen))
+        getal1 = self.lhs.evaluate(variabelen)
+        getal2 = self.rhs.evaluate(variabelen)
         
-        ans = Constant(eval('%s %s %s' % (getal1, self.op_symbol, getal2)))
-        
-        if float(int(ans))==float(ans):
-            return int(ans)
+        if type(getal1) ==  str:
+            return getal1 + self.op_symbol +str(getal2)
+        elif type(getal2) == str:
+            return str(getal1) + self.op_symbol + getal2
         else:
-            return ans
+            return Constant(eval('%s %s %s' % (getal1, self.op_symbol, getal2)))
+        
+        
+        
+        # return ans
+        # if float(int(ans))==float(ans):
+        #     return int(ans)
+        # else:
+        #     return ans
         # return Constant(eval('%s %s %s' % (getal1, self.op_symbol, getal2)))
          
         
