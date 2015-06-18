@@ -175,7 +175,9 @@ class Variable(Expression):
     def __init__(self,teken):
         self.teken = teken
     
-        
+    def __str__(self):
+        return str(self.teken)
+    
 
         
 class BinaryNode(Expression):
