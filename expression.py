@@ -3,6 +3,8 @@ import math
 # split a string into mathematical tokens
 # returns a list of numbers, operators, parantheses and commas
 # output will not contain spaces
+
+
 def tokenize(string):
     splitchars = list("+-*/(),")
     
@@ -128,7 +130,7 @@ class Expression():
             
             else:
                 output.append(Variable(token))
-            
+                
                 # volgens mij (ruben) kan valueError weg als we ook variabelen toelaten
                 #else:
                 #     # unknown token
@@ -137,7 +139,7 @@ class Expression():
         # pop any tokens still on the stack to the output
         while len(stack) > 0:
             output.append(stack.pop())
-        
+        self.output = output
         # convert RPN to an actual expression tree
         for t in output:
             if t in oplist:
@@ -150,7 +152,6 @@ class Expression():
                 # a constant, push it to the stack
                 stack.append(t)
         # the resulting expression tree is what's left on the stack
-    
         
         return stack[0] 
         
@@ -190,6 +191,7 @@ class BinaryNode(Expression):
     """A node in the expression tree representing a binary operator."""
     # ik heb nog steeds niet echt een idee wat BinaryNode doet
     # wat is bijvoorbeeld dat lhs en rhs? waar haalt hij die informatie vandaan
+    order_op = {'+':[1,0],'-':[1,0], '*':[2,0], '/':[2,0],'**':[3,1]}
     
     def __init__(self, lhs, rhs, op_symbol):  #waar roep je deze init aan, waar komen de gegevens vandaag? wat is dit uberhaupt?
         self.lhs = lhs
@@ -208,32 +210,42 @@ class BinaryNode(Expression):
         
         #ik moet opnieuw de order of operation opstellen, dat moet sneller kunnen
         
-    
     def __str__(self):
+        uitvoer = ""
         
-        # return(self.infix(self))
-        lstring = str(self.lhs)
-        rstring = str(self.rhs)
-        return "(%s %s %s)" % (lstring, self.op_symbol, rstring)
-        
+        for side in [self.lhs, self.rhs]:
+            if isinstance(side, BinaryNode):
+                order_lower = self.order_op[side.op_symbol][0]
+                order_this = self.order_op[self.op_symbol][0]
+                
+                
+                # toevoegen links en recht ass.
+                if order_lower < order_this:
+                    uitvoer = uitvoer + "(%s)" % (str(side))
+                else:
+                    uitvoer = uitvoer + str(side)
 
+            else:
+                uitvoer = uitvoer + str(side)
+                
+            if side is self.lhs:
+                uitvoer = uitvoer + " %s " % (self.op_symbol)
         
-        
+        return uitvoer
         # TODO: do we always need parantheses?
         
-        
-        
-        
     # def evaluate(self, variabelen={}):
+        
+        
+        
+        
     #     getal1 = float(self.lhs)
     #     getal2 = float(self.rhs)
         
     #     return ans = getal1 self.op_symbol getal2   
-        
-        
-    
-        
-        
+       
+       
+       
 class AddNode(BinaryNode):
     """Represents the addition operator"""
     def __init__(self, lhs, rhs):
