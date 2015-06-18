@@ -141,19 +141,23 @@ class Expression():
             output.append(stack.pop())
         self.output = output
         # convert RPN to an actual expression tree
+        
         for t in output:
             if t in oplist:
                 # let eval and operator overloading take care of figuring out what to do
-               
                 y = stack.pop()
                 x = stack.pop()
                 stack.append(eval('x %s y' % t))
             else:
                 # a constant, push it to the stack
                 stack.append(t)
+                
         # the resulting expression tree is what's left on the stack
         
         return stack[0] 
+    
+    
+        
         
     
 class Constant(Expression):
@@ -176,7 +180,11 @@ class Constant(Expression):
         
     def __float__(self):
         return float(self.value)
-
+        
+    def evaluate(self):
+        return float(self.value)
+        
+        
 class Variable(Expression):
     #hier defineren we de variabelen
     def __init__(self,teken):
@@ -184,6 +192,10 @@ class Variable(Expression):
     
     def __str__(self):
         return str(self.teken)
+    
+    def evaluate(self):
+        
+        
     
 
         
@@ -234,8 +246,19 @@ class BinaryNode(Expression):
         return uitvoer
         # TODO: do we always need parantheses?
         
-    # def evaluate(self, variabelen={}):
+    def evaluate(self, variabelen={}):
         
+        getal1 = float(self.lhs.evaluate(variabelen))
+        getal2 = float(self.rhs.evaluate(variabelen))
+        
+        ans = Constant(eval('%s %s %s' % (getal1, self.op_symbol, getal2)))
+        
+        if float(int(ans))==float(ans):
+            return int(ans)
+        else:
+            return ans
+        # return Constant(eval('%s %s %s' % (getal1, self.op_symbol, getal2)))
+         
         
         
         
@@ -272,3 +295,5 @@ class PowNode(BinaryNode):
         super(PowNode, self).__init__(lhs, rhs , '**')
 
 # TODO: add more subclasses of Expression to represent operators, variables, functions, etc.
+
+
