@@ -3,6 +3,8 @@ import math
 # split a string into mathematical tokens
 # returns a list of numbers, operators, parantheses and commas
 # output will not contain spaces
+
+
 def tokenize(string):
     splitchars = list("+-*/(),")
     
@@ -137,8 +139,7 @@ class Expression():
         # pop any tokens still on the stack to the output
         while len(stack) > 0:
             output.append(stack.pop())
-
-        
+        self.output = output
         # convert RPN to an actual expression tree
         for t in output:
             if t in oplist:
@@ -217,6 +218,8 @@ class BinaryNode(Expression):
                 order_lower = self.order_op[side.op_symbol][0]
                 order_this = self.order_op[self.op_symbol][0]
                 
+                
+                # toevoegen links en recht ass.
                 if order_lower < order_this:
                     uitvoer = uitvoer + "(%s)" % (str(side))
                 else:
@@ -232,6 +235,10 @@ class BinaryNode(Expression):
         # TODO: do we always need parantheses?
         
     # def evaluate(self, variabelen={}):
+        
+        
+        
+        
     #     getal1 = float(self.lhs)
     #     getal2 = float(self.rhs)
         
