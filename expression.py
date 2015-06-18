@@ -123,11 +123,17 @@ class Expression():
                     output.append(stack.pop())
                 # pop the left paranthesis from the stack (but not to the output)
                 stack.pop()
+                
             # TODO: do we need more kinds of tokens?
-            else:
-                # unknown token
-                raise ValueError('Unknown token: %s' % token)
             
+            else:
+                output.append(Variable(token))
+            
+                # volgens mij (ruben) kan valueError weg als we ook variabelen toelaten
+                #else:
+                #     # unknown token
+                #     raise ValueError('Unknown token: %s' % token)
+                            
         # pop any tokens still on the stack to the output
         while len(stack) > 0:
             output.append(stack.pop())
@@ -170,12 +176,14 @@ class Constant(Expression):
     def __float__(self):
         return float(self.value)
 
-# class Variable(Expression):
-#     #hier defineren we de variabelen
-#     def __init__(self,teken):
-#         self.teken = teken
+class Variable(Expression):
+    #hier defineren we de variabelen
+    def __init__(self,teken):
+        self.teken = teken
     
-        
+    def __str__(self):
+        return str(self.teken)
+    
 
         
 class BinaryNode(Expression):
@@ -200,32 +208,32 @@ class BinaryNode(Expression):
         
         #ik moet opnieuw de order of operation opstellen, dat moet sneller kunnen
         
-    def infix(self,upper_prio = 0, rhs_of_lassoc = False):
+    # def infix(self,upper_prio = 0, rhs_of_lassoc = False):
         
-        order_op = {'+':[1,False],'-':[1,True], '*':[2,False], '/':[2,True],'**':[3,True]}
-        lstring =str(self.lhs)
-        rstring =str(self.rhs)
-        manupilatie = self.op_symbol
+    #     order_op = {'+':[1,False],'-':[1,True], '*':[2,False], '/':[2,True],'**':[3,True]}
+    #     lstring =str(self.lhs)
+    #     rstring =str(self.rhs)
+    #     manupilatie = self.op_symbol
         
-        prio, lassoc = order_op[manupilatie]
+    #     prio, lassoc = order_op[manupilatie]
         
-        rhand = self.infix(prio, lassoc)
-        lhand = self.infix(prio)
+    #     rhand = self.infix(prio, lassoc)
+    #     lhand = self.infix(prio)
         
-        string = "%s %s %s" % (lhand, manupilatie, rhand)
+    #     string = "%s %s %s" % (lhand, manupilatie, rhand)
         
-        if prio < upper_prio or (prio == upper_prio and rhs_of_lassoc):
-            string = "(" + string + ")"
-            return string
+    #     if prio < upper_prio or (prio == upper_prio and rhs_of_lassoc):
+    #         string = "(" + string + ")"
+    #         return string
         
-        return(string)
+    #     return(string)
     
     def __str__(self):
         
-        return(self.infix(self))
-        # lstring = str(self.lhs)
-        # rstring = str(self.rhs)
-        # return "(%s %s %s)" % (lstring, self.op_symbol, rstring)
+        # return(self.infix(self))
+        lstring = str(self.lhs)
+        rstring = str(self.rhs)
+        return "(%s %s %s)" % (lstring, self.op_symbol, rstring)
         
 
         
@@ -236,7 +244,10 @@ class BinaryNode(Expression):
         
         
     # def evaluate(self, variabelen={}):
+    #     getal1 = float(self.lhs)
+    #     getal2 = float(self.rhs)
         
+    #     return ans = getal1 self.op_symbol getal2   
         
         
     
