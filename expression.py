@@ -170,10 +170,10 @@ class Constant(Expression):
     def __float__(self):
         return float(self.value)
 
-class Variable(Expression):
-    #hier defineren we de variabelen
-    def __init__(self,teken):
-        self.teken = teken
+# class Variable(Expression):
+#     #hier defineren we de variabelen
+#     def __init__(self,teken):
+#         self.teken = teken
     
         
 
