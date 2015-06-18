@@ -100,20 +100,18 @@ class Expression():
                 # pop operators from the stack to the output until the top is no longer an operator
                 
                 while True:
-                    # TODO: when there are more operators, the rules are more complicated
-                    # look up the shunting yard-algorithm
-                    if len(stack) == 0 or stack[-1] not in oplist:
-                        
-                        break
                     
-                    if (order_op[token][1]==0 and order_op[token][0] <= order_op[stack[-1]][0]
+                    if len(stack) == 0 or stack[-1] not in oplist:
+                        break
+                    # Shunting Yard algoritme
+                    
+                    elif (order_op[token][1]==0 and order_op[token][0] <= order_op[stack[-1]][0]
                         ) or (order_op[token][1]==1 and order_op[token][0]<order_op[stack[-1]][0]):
                         
                         output.append(stack.pop())
                     else:
                         break
-                    # output.append(stack.pop())
-                # push the new operator onto the stack
+                    
                 stack.append(token)
                 
             elif token == '(':
@@ -138,6 +136,7 @@ class Expression():
         for t in output:
             if t in oplist:
                 # let eval and operator overloading take care of figuring out what to do
+               
                 y = stack.pop()
                 x = stack.pop()
                 stack.append(eval('x %s y' % t))
@@ -145,7 +144,10 @@ class Expression():
                 # a constant, push it to the stack
                 stack.append(t)
         # the resulting expression tree is what's left on the stack
-        return stack[0]
+    
+        
+        return stack[0] 
+        
     
 class Constant(Expression):
     """Represents a constant value"""
@@ -167,11 +169,21 @@ class Constant(Expression):
         
     def __float__(self):
         return float(self.value)
+
+class Variable(Expression):
+    #hier defineren we de variabelen
+    def __init__(self,teken):
+        self.teken = teken
+    
+        
+
         
 class BinaryNode(Expression):
     """A node in the expression tree representing a binary operator."""
+    # ik heb nog steeds niet echt een idee wat BinaryNode doet
+    # wat is bijvoorbeeld dat lhs en rhs? waar haalt hij die informatie vandaan
     
-    def __init__(self, lhs, rhs, op_symbol):
+    def __init__(self, lhs, rhs, op_symbol):  #waar roep je deze init aan, waar komen de gegevens vandaag? wat is dit uberhaupt?
         self.lhs = lhs
         self.rhs = rhs
         self.op_symbol = op_symbol
@@ -183,13 +195,52 @@ class BinaryNode(Expression):
             return self.lhs == other.lhs and self.rhs == other.rhs
         else:
             return False
-            
+    
+    
+        
+        #ik moet opnieuw de order of operation opstellen, dat moet sneller kunnen
+        
+    def infix(self,upper_prio = 0, rhs_of_lassoc = False):
+        
+        order_op = {'+':[1,False],'-':[1,True], '*':[2,False], '/':[2,True],'**':[3,True]}
+        lstring =str(self.lhs)
+        rstring =str(self.rhs)
+        manupilatie = self.op_symbol
+        
+        prio, lassoc = order_op[manupilatie]
+        
+        rhand = self.infix(prio, lassoc)
+        lhand = self.infix(prio)
+        
+        string = "%s %s %s" % (lhand, manupilatie, rhand)
+        
+        if prio < upper_prio or (prio == upper_prio and rhs_of_lassoc):
+            string = "(" + string + ")"
+            return string
+        
+        return(string)
+    
     def __str__(self):
-        lstring = str(self.lhs)
-        rstring = str(self.rhs)
+        
+        return(self.infix(self))
+        # lstring = str(self.lhs)
+        # rstring = str(self.rhs)
+        # return "(%s %s %s)" % (lstring, self.op_symbol, rstring)
+        
+
+        
         
         # TODO: do we always need parantheses?
-        return "(%s %s %s)" % (lstring, self.op_symbol, rstring)
+        
+        
+        
+        
+    # def evaluate(self, variabelen={}):
+        
+        
+        
+    
+        
         
 class AddNode(BinaryNode):
     """Represents the addition operator"""
