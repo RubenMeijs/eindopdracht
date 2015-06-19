@@ -6,7 +6,7 @@ import math
 
 
 def tokenize(string):
-    splitchars = list("+-*/(),")
+    splitchars = list("+-*/(),%")
     
     # surround any splitchar by spaces
     tokenstring = []
@@ -72,6 +72,9 @@ class Expression():
     
     def __pow__(self,other):
         return PowNode(self,other)
+    
+    def __mod__(self,other):
+        return ModNode(self,other)
     # Done: other overloads, such as __sub__, __mul__, etc.
     
     # basic Shunting-yard algorithm
@@ -86,9 +89,9 @@ class Expression():
         output = []
         
         # list of operators
-        oplist = ['+','-', '*', '/','**']
+        oplist = ['+','-', '*', '/','**','%']
         #order_op index 0 is order, index 1 is associativity (0=left, 1=right)
-        order_op = {'+':[1,0],'-':[1,0], '*':[2,0], '/':[2,0],'**':[3,1]}
+        order_op = {'+':[1,0],'-':[1,0], '*':[2,0], '/':[2,0],'**':[3,1], '%':[4,1]}
         for token in tokens:
             
             if isnumber(token):
@@ -221,7 +224,7 @@ class BinaryNode(Expression):
     """A node in the expression tree representing a binary operator."""
     # ik heb nog steeds niet echt een idee wat BinaryNode doet
     # wat is bijvoorbeeld dat lhs en rhs? waar haalt hij die informatie vandaan
-    order_op = {'+':[1,0],'-':[1,0], '*':[2,0], '/':[2,0],'**':[3,1]}
+    order_op = {'+':[1,0],'-':[1,0], '*':[2,0], '/':[2,0],'**':[3,1], '%':[4,1]}
     
     def __init__(self, lhs, rhs, op_symbol):  #waar roep je deze init aan, waar komen de gegevens vandaag? wat is dit uberhaupt?
         self.lhs = lhs
@@ -270,13 +273,33 @@ class BinaryNode(Expression):
         getal2 = self.rhs.evaluate(variabelen)
         
         if type(getal1) ==  str:
-            return getal1 + self.op_symbol +str(getal2)
+            ans =  getal1 + self.op_symbol +str(getal2)
+            
         elif type(getal2) == str:
-            return str(getal1) + self.op_symbol + getal2
+            
+            ans =  getal2 + self.op_symbol +str(getal1)
+            
         else:
-            return Constant(eval('%s %s %s' % (getal1, self.op_symbol, getal2)))
+            ans =  Constant(eval('%s %s %s' % (getal1, self.op_symbol, getal2)))
+        
+        print(ans, '(lol)')
+        
+        if type(ans)==str:
+                
+            if len(list(ans))>3:
+                
+                links, operatie, rechts = list(ans)[-3:]
+                print(links, operatie, rechts)
+                getal2 = Constant(eval('%s %s %s' % (links, operatie, rechts)))
+                print(ans)
+                return getal2
+                # TODO: write code... len(list(ans))>3:
+            
+            
         
         
+        
+        return ans
         
         # return ans
         # if float(int(ans))==float(ans):
@@ -319,6 +342,11 @@ class PowNode(BinaryNode):
     """Represents the power operator"""
     def __init__(self, lhs, rhs):
         super(PowNode, self).__init__(lhs, rhs , '**')
+
+class ModNode(BinaryNode):
+    """Represents the modulo operator"""
+    def __init__(self, lhs, rhs):
+        super(ModNode, self).__init__(lhs, rhs , '%')
 
 # TODO: add more subclasses of Expression to represent operators, variables, functions, etc.
 
