@@ -18,7 +18,7 @@ variabelen aangeleverd met een dictionary.
 To do:
 
 - Overload van de gelijkheidsoperator om te checken of twee expressiebomen dezelfde berekening voorstellen.
--  evaluate aanpassen zodat oa 1+x+18 =  19+x wordt, begin van simplify dus
+-  evaluate aanpassen zodat oa 1+x+18 =  19+x wordt, begin van simplify dus, meijs mee bezig
 - functies
     - sin, cos, tan en hun inverse
     - log
