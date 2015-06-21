@@ -334,5 +334,3 @@ class ModNode(BinaryNode):
         super(ModNode, self).__init__(lhs, rhs , '%')
 
 # TODO: add more subclasses of Expression to represent operators, variables, functions, etc.
-
-
