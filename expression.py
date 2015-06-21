@@ -6,7 +6,7 @@ import math
 
 
 def tokenize(string):
-    splitchars = list("+-*/(),")
+    splitchars = list("+-*/(),%")
     
     # surround any splitchar by spaces
     tokenstring = []
@@ -72,6 +72,9 @@ class Expression():
     
     def __pow__(self,other):
         return PowNode(self,other)
+    
+    def __mod__(self,other):
+        return ModNode(self,other)
     # Done: other overloads, such as __sub__, __mul__, etc.
     
     # basic Shunting-yard algorithm
@@ -86,9 +89,9 @@ class Expression():
         output = []
         
         # list of operators
-        oplist = ['+','-', '*', '/','**']
+        oplist = ['+','-', '*', '/','**','%']
         #order_op index 0 is order, index 1 is associativity (0=left, 1=right)
-        order_op = {'+':[1,0],'-':[1,0], '*':[2,0], '/':[2,0],'**':[3,1]}
+        order_op = {'+':[1,0],'-':[1,0], '*':[2,0], '/':[2,0],'**':[3,1], '%':[4,1]}
         for token in tokens:
             
             if isnumber(token):
@@ -188,6 +191,9 @@ class Constant(Expression):
         
     def evaluate(self,variabelen):
         return self.value
+    
+    def numIntegrate(self,variabele,interval):
+        return (self.value *(interval[1] -interval[0]))
         
         
 class Variable(Expression):
@@ -211,13 +217,24 @@ class Variable(Expression):
             return variabelen[self.teken]
         else:
             return str(self.teken)
+<<<<<<< HEAD
+=======
+    
+    
+        
+    
+>>>>>>> meijs
 
         
 class BinaryNode(Expression):
     """A node in the expression tree representing a binary operator."""
     # ik heb nog steeds niet echt een idee wat BinaryNode doet
     # wat is bijvoorbeeld dat lhs en rhs? waar haalt hij die informatie vandaan
+<<<<<<< HEAD
     order_op = {'+':[1,True],'-':[1,False], '*':[2,True], '/':[2,False],'**':[3,False]}
+=======
+    order_op = {'+':[1,0],'-':[1,0], '*':[2,0], '/':[2,0],'**':[3,1], '%':[4,1]}
+>>>>>>> meijs
     
     def __init__(self, lhs, rhs, op_symbol):  #waar roep je deze init aan, waar komen de gegevens vandaag? wat is dit uberhaupt?
         self.lhs = lhs
@@ -257,8 +274,14 @@ class BinaryNode(Expression):
             zijde = zijde + 1
             
         return uitvoer
+<<<<<<< HEAD
 
     def evaluate(self, variabelen={}):
+=======
+        # TODO: do we always need parantheses?
+    
+    def evaluate(self,variabelen={}):
+>>>>>>> meijs
         
         getal1 = self.lhs.evaluate(variabelen)
         getal2 = self.rhs.evaluate(variabelen)
@@ -269,23 +292,73 @@ class BinaryNode(Expression):
             return str(getal1) + self.op_symbol + getal2
         else:
             return Constant(eval('%s %s %s' % (getal1, self.op_symbol, getal2)))
+
+   
+    def numIntegrate(self,variabele,interval):
+        steps_per_unit = 1000
+        steps = (interval[1]-interval[0])*steps_per_unit
+        begin = interval[0]
+        eind = interval[1]
+        ans = 0
         
         
         
-        # return ans
-        # if float(int(ans))==float(ans):
-        #     return int(ans)
-        # else:
-        #     return ans
-        # return Constant(eval('%s %s %s' % (getal1, self.op_symbol, getal2)))
-         
+        
+        for i in range(1,steps):
+            xa = begin+ (i*(eind -begin))/steps
+            xb = begin+ ((i+1)*(eind -begin))/steps
+            fa = self.evaluate({variabele: xa })
+            fb = self.evaluate({variabele: xb})
+            
+            Fx = eval('%s %s %s' % (fa,'+',fb))
+            
+            ans += (1/2)*Fx/steps_per_unit
+            
+        
+            
+            
+            
+        return round(ans,3)
+        
+    #  
+        
+        
+    # def evaluate(self, variabelen={}):
         
         
         
-    #     getal1 = float(self.lhs)
-    #     getal2 = float(self.rhs)
+    #     print(self.lhs, 'lhs',type(self.lhs))
+    #     print(self.rhs, 'rhs',type(self.rhs))
+    #     getal1 = self.lhs.evaluate(variabelen)
+    #     getal2 = self.rhs.evaluate(variabelen)
         
-    #     return ans = getal1 self.op_symbol getal2   
+    #     print(self.lhs, 'lhs',type(self.lhs))
+        
+    #     if type(self.lhs) ==  AddNode:
+    #         print('plusje')
+        
+        
+    #     print(getal1 , 'getal1')
+    #     print(getal2, 'getal2')
+       
+    #     if type(getal1) ==  str:
+    #         ans=  getal1 + self.op_symbol +str(getal2)
+            
+            
+    #     elif type(getal2) == str:
+            
+            
+            
+    #         ans =  getal2 + self.op_symbol +str(getal1) 
+            
+            
+    #     else:
+    #         ans =  Constant(eval('%s %s %s' % (getal1, self.op_symbol, getal2)))
+        
+    #     # print(ans, '(lol)')
+        
+    
+        
        
        
        
@@ -313,6 +386,11 @@ class PowNode(BinaryNode):
     """Represents the power operator"""
     def __init__(self, lhs, rhs):
         super(PowNode, self).__init__(lhs, rhs , '**')
+
+class ModNode(BinaryNode):
+    """Represents the modulo operator"""
+    def __init__(self, lhs, rhs):
+        super(ModNode, self).__init__(lhs, rhs , '%')
 
 # TODO: add more subclasses of Expression to represent operators, variables, functions, etc.
 
