@@ -148,9 +148,10 @@ class Expression():
         # pop any tokens still on the stack to the output
         while len(stack) > 0:
             output.append(stack.pop())
-        self.output = output
-        # convert RPN to an actual expression tree
         
+        self.output = output
+
+        # convert RPN to an actual expression tree
         for t in output:
             if t in oplist:
                 # let eval and operator overloading take care of figuring out what to do
@@ -165,9 +166,6 @@ class Expression():
         
         return stack[0] 
     
-    
-        
-        
     
 class Constant(Expression):
     """Represents a constant value"""
@@ -219,17 +217,16 @@ class Variable(Expression):
             return variabelen[self.teken]
         else:
             return str(self.teken)
-    
-    
-        
-    
+
 
         
 class BinaryNode(Expression):
     """A node in the expression tree representing a binary operator."""
     # ik heb nog steeds niet echt een idee wat BinaryNode doet
     # wat is bijvoorbeeld dat lhs en rhs? waar haalt hij die informatie vandaan
-    order_op = {'+':[1,0],'-':[1,0], '*':[2,0], '/':[2,0],'**':[3,1], '%':[4,1]}
+
+    order_op = {'+':[1,True],'-':[1,False], '*':[2,True], '/':[2,False],'**':[3,False]}
+
     
     def __init__(self, lhs, rhs, op_symbol):  #waar roep je deze init aan, waar komen de gegevens vandaag? wat is dit uberhaupt?
         self.lhs = lhs
@@ -244,35 +241,36 @@ class BinaryNode(Expression):
         else:
             return False
     
-    
-        
         #ik moet opnieuw de order of operation opstellen, dat moet sneller kunnen
         
     def __str__(self):
         uitvoer = ""
         
+        zijde = 0
         for side in [self.lhs, self.rhs]:
             if isinstance(side, BinaryNode):
                 order_lower = self.order_op[side.op_symbol][0]
                 order_this = self.order_op[self.op_symbol][0]
+                lower_ass = self.order_op[self.op_symbol][1]
                 
-                
-                # toevoegen links en recht ass.
-                if order_lower < order_this:
+                if order_lower < order_this or (not lower_ass and order_lower <= order_this and zijde == 1):
                     uitvoer = uitvoer + "(%s)" % (str(side))
                 else:
                     uitvoer = uitvoer + str(side)
-
             else:
                 uitvoer = uitvoer + str(side)
                 
             if side is self.lhs:
                 uitvoer = uitvoer + " %s " % (self.op_symbol)
-        
+            
+            zijde = zijde + 1
+            
         return uitvoer
+
         # TODO: do we always need parantheses?
     
     def evaluate(self,variabelen={}):
+
         
         getal1 = self.lhs.evaluate(variabelen)
         getal2 = self.rhs.evaluate(variabelen)
@@ -293,8 +291,6 @@ class BinaryNode(Expression):
         ans = 0
         
         
-        
-        
         for i in range(1,steps):
             xa = begin+ (i*(eind -begin))/steps
             xb = begin+ ((i+1)*(eind -begin))/steps
@@ -305,54 +301,8 @@ class BinaryNode(Expression):
             
             ans += (1/2)*Fx/steps_per_unit
             
-        
-            
-            
-            
         return round(ans,3)
         
-    #  
-        
-        
-    # def evaluate(self, variabelen={}):
-        
-        
-        
-    #     print(self.lhs, 'lhs',type(self.lhs))
-    #     print(self.rhs, 'rhs',type(self.rhs))
-    #     getal1 = self.lhs.evaluate(variabelen)
-    #     getal2 = self.rhs.evaluate(variabelen)
-        
-    #     print(self.lhs, 'lhs',type(self.lhs))
-        
-    #     if type(self.lhs) ==  AddNode:
-    #         print('plusje')
-        
-        
-    #     print(getal1 , 'getal1')
-    #     print(getal2, 'getal2')
-       
-    #     if type(getal1) ==  str:
-    #         ans=  getal1 + self.op_symbol +str(getal2)
-            
-            
-    #     elif type(getal2) == str:
-            
-            
-            
-    #         ans =  getal2 + self.op_symbol +str(getal1) 
-            
-            
-    #     else:
-    #         ans =  Constant(eval('%s %s %s' % (getal1, self.op_symbol, getal2)))
-        
-    #     # print(ans, '(lol)')
-        
-    
-        
-       
-       
-       
 class AddNode(BinaryNode):
     """Represents the addition operator"""
     def __init__(self, lhs, rhs):
@@ -384,5 +334,3 @@ class ModNode(BinaryNode):
         super(ModNode, self).__init__(lhs, rhs , '%')
 
 # TODO: add more subclasses of Expression to represent operators, variables, functions, etc.
-
-
