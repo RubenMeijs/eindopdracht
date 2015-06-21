@@ -291,8 +291,6 @@ class BinaryNode(Expression):
         ans = 0
         
         
-        
-        
         for i in range(1,steps):
             xa = begin+ (i*(eind -begin))/steps
             xb = begin+ ((i+1)*(eind -begin))/steps
@@ -303,18 +301,8 @@ class BinaryNode(Expression):
             
             ans += (1/2)*Fx/steps_per_unit
             
-        
-            
-            
-            
         return round(ans,3)
         
-    
-    
-        
-       
-       
-       
 class AddNode(BinaryNode):
     """Represents the addition operator"""
     def __init__(self, lhs, rhs):
