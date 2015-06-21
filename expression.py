@@ -194,6 +194,9 @@ class Constant(Expression):
     def evaluate(self,variabelen):
         return self.value
     
+    def numIntegrate(self,variabele,interval):
+        return (self.value *(interval[1] -interval[0]))
+        
         
 class Variable(Expression):
     #hier defineren we de variabelen
