@@ -13,6 +13,7 @@ def tokenize(string):
     for c in string:
         if c in splitchars:
             tokenstring.append(' %s ' % c)
+        
         else:
             tokenstring.append(c)
     tokenstring = ''.join(tokenstring)
@@ -21,13 +22,28 @@ def tokenize(string):
     
     
     #special casing for **:
-    ans = []
+    sub_ans = []
     for t in tokens:
-        if len(ans) > 0 and t == ans[-1] == '*':
-            ans[-1] = '**'
+        if len(sub_ans) > 0 and t == sub_ans[-1] == '*':
+           sub_ans[-1] = '**'
         else:
-            ans.append(t)
-    return ans
+            sub_ans.append(t)
+    
+    ans = [sub_ans[0]]
+    i=1
+    
+    
+    while i<len(sub_ans):
+        if sub_ans[i] == '-' and sub_ans[i-1] in splitchars:
+            ans.append('(-'+ sub_ans[i+1] + ')')
+            i += 2
+            print(ans)
+        else:
+            ans.append(sub_ans[i])
+            i+=1
+            
+    return sub_ans
+        
     
 # check if a string represents a numeric value
 def isnumber(string):
@@ -269,19 +285,24 @@ class BinaryNode(Expression):
 
         # TODO: do we always need parantheses?
     
-    def evaluate(self,variabelen={}):
+    #Evaluatie functie
+    def evaluate(self, variabelen={}):
 
-        
+        #bepaal de waarden van lhs en de rhs, neem daarin de ingevulde variable waarden mee
         getal1 = self.lhs.evaluate(variabelen)
         getal2 = self.rhs.evaluate(variabelen)
-        
-        if type(getal1) ==  str:
-            return getal1 + self.op_symbol +str(getal2)
-        elif type(getal2) == str:
-            return str(getal1) + self.op_symbol + getal2
-        else:
-            return Constant(eval('%s %s %s' % (getal1, self.op_symbol, getal2)))
 
+        #Als een van de twee géén constante is, dan is 1 van de twee ofwel een variabele, ofwel
+        #een compound expressie met een variabele er in. Dit kan dan niet als getal geevalueerd worden
+        if not isinstance(getal1,Constant):
+            return BinaryNode(getal1,getal2,self.op_symbol)
+        elif not isinstance(getal2,Constant):
+            return BinaryNode(getal1,getal2,self.op_symbol)
+            
+        #Wel twee constanten? Voer de operatie uit en maak een nieuwe constante aan
+        else:
+
+            return Constant(eval('%s %s %s' % (getal1.constantvalue(), self.op_symbol, getal2.constantvalue())))
    
     def numIntegrate(self,variabele,interval):
         steps_per_unit = 1000
