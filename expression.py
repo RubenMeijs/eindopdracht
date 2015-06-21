@@ -266,55 +266,56 @@ class BinaryNode(Expression):
         
         return uitvoer
         # TODO: do we always need parantheses?
-        
-    def evaluate(self, variabelen={}):
+    
+    def evaluate(self,variabelen={}):
         
         getal1 = self.lhs.evaluate(variabelen)
         getal2 = self.rhs.evaluate(variabelen)
         
         if type(getal1) ==  str:
-            ans =  getal1 + self.op_symbol +str(getal2)
-            
+            return getal1 + self.op_symbol +str(getal2)
         elif type(getal2) == str:
-            
-            ans =  getal2 + self.op_symbol +str(getal1)
-            
+            return str(getal1) + self.op_symbol + getal2
         else:
-            ans =  Constant(eval('%s %s %s' % (getal1, self.op_symbol, getal2)))
+            return Constant(eval('%s %s %s' % (getal1, self.op_symbol, getal2)))
+
+    
+    # def evaluate(self, variabelen={}):
         
-        print(ans, '(lol)')
         
-        if type(ans)==str:
-                
-            if len(list(ans))>3:
-                
-                links, operatie, rechts = list(ans)[-3:]
-                print(links, operatie, rechts)
-                getal2 = Constant(eval('%s %s %s' % (links, operatie, rechts)))
-                print(ans)
-                return getal2
-                # TODO: write code... len(list(ans))>3:
+        
+    #     print(self.lhs, 'lhs',type(self.lhs))
+    #     print(self.rhs, 'rhs',type(self.rhs))
+    #     getal1 = self.lhs.evaluate(variabelen)
+    #     getal2 = self.rhs.evaluate(variabelen)
+        
+    #     print(self.lhs, 'lhs',type(self.lhs))
+        
+    #     if type(self.lhs) ==  AddNode:
+    #         print('plusje')
+        
+        
+    #     print(getal1 , 'getal1')
+    #     print(getal2, 'getal2')
+       
+    #     if type(getal1) ==  str:
+    #         ans=  getal1 + self.op_symbol +str(getal2)
             
             
+    #     elif type(getal2) == str:
+            
+            
+            
+    #         ans =  getal2 + self.op_symbol +str(getal1) 
+            
+            
+    #     else:
+    #         ans =  Constant(eval('%s %s %s' % (getal1, self.op_symbol, getal2)))
         
+    #     # print(ans, '(lol)')
         
+    
         
-        return ans
-        
-        # return ans
-        # if float(int(ans))==float(ans):
-        #     return int(ans)
-        # else:
-        #     return ans
-        # return Constant(eval('%s %s %s' % (getal1, self.op_symbol, getal2)))
-         
-        
-        
-        
-    #     getal1 = float(self.lhs)
-    #     getal2 = float(self.rhs)
-        
-    #     return ans = getal1 self.op_symbol getal2   
        
        
        
