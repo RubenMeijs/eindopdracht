@@ -7,7 +7,7 @@ def tokenize(string):
     #output will not contain spaces
     
     splitchars = list("+-*/(),")
-    
+
     # surround any splitchar by spaces
     tokenstring = []
     for c in string:
@@ -84,10 +84,10 @@ class Expression():
         output = []
         
         # list of operators
+
         oplist = ['+','-', '*', '/','**']
-        
         #order_op index 0 is order, index 1 is associativity (0=left, 1=right)
-        order_op = {'+':[1,0],'-':[1,0], '*':[2,0], '/':[2,0],'**':[3,1]}
+        order_op = {'+':[1,0],'-':[1,0], '*':[2,0], '/':[2,0],'**':[3,1], '%':[4,1]}
         for token in tokens:
             
             if isnumber(token):
@@ -183,6 +183,9 @@ class Constant(Expression):
     # returns the value without casting a specific type    
     def constantvalue(self):
         return self.value
+    
+    def numIntegrate(self,variabele,interval):
+        return (self.value *(interval[1] -interval[0]))
         
         
 #hier defineren we de variabelen        
@@ -212,6 +215,7 @@ class Variable(Expression):
 
         
 class BinaryNode(Expression):
+    
     #A node in the expression tree representing a binary operator.
     order_op = {'+':[1,True],'-':[1,False], '*':[2,True], '/':[2,False],'**':[3,False]}
 
@@ -266,7 +270,7 @@ class BinaryNode(Expression):
 
     #Evaluatie functie
     def evaluate(self, variabelen={}):
-        
+
         #bepaal de waarden van lhs en de rhs, neem daarin de ingevulde variable waarden mee
         getal1 = self.lhs.evaluate(variabelen)
         getal2 = self.rhs.evaluate(variabelen)
@@ -280,9 +284,31 @@ class BinaryNode(Expression):
             
         #Wel twee constanten? Voer de operatie uit en maak een nieuwe constante aan
         else:
+
             return Constant(eval('%s %s %s' % (getal1.constantvalue(), self.op_symbol, getal2.constantvalue())))
+
+    
+    #Numerieke integratie
+    def numIntegrate(self,variabele,interval):
+        steps_per_unit = 1000
+        steps = (interval[1]-interval[0])*steps_per_unit
+        begin = interval[0]
+        eind = interval[1]
+        ans = 0
         
-#Overloaden van de operaties     
+        for i in range(1,steps):
+            xa = begin+ (i*(eind -begin))/steps
+            xb = begin+ ((i+1)*(eind -begin))/steps
+            fa = self.evaluate({variabele: xa })
+            fb = self.evaluate({variabele: xb})
+            
+            Fx = eval('%s %s %s' % (fa,'+',fb))
+            
+            ans += (1/2)*Fx/steps_per_unit
+            
+        return round(ans,3)
+
+#overloaden van operaties        
 class AddNode(BinaryNode):
     """Represents the addition operator"""
     def __init__(self, lhs, rhs):
