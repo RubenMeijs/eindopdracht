@@ -217,24 +217,16 @@ class Variable(Expression):
             return variabelen[self.teken]
         else:
             return str(self.teken)
-<<<<<<< HEAD
-=======
-    
-    
-        
-    
->>>>>>> meijs
+
 
         
 class BinaryNode(Expression):
     """A node in the expression tree representing a binary operator."""
     # ik heb nog steeds niet echt een idee wat BinaryNode doet
     # wat is bijvoorbeeld dat lhs en rhs? waar haalt hij die informatie vandaan
-<<<<<<< HEAD
+
     order_op = {'+':[1,True],'-':[1,False], '*':[2,True], '/':[2,False],'**':[3,False]}
-=======
-    order_op = {'+':[1,0],'-':[1,0], '*':[2,0], '/':[2,0],'**':[3,1], '%':[4,1]}
->>>>>>> meijs
+
     
     def __init__(self, lhs, rhs, op_symbol):  #waar roep je deze init aan, waar komen de gegevens vandaag? wat is dit uberhaupt?
         self.lhs = lhs
@@ -274,14 +266,11 @@ class BinaryNode(Expression):
             zijde = zijde + 1
             
         return uitvoer
-<<<<<<< HEAD
 
-    def evaluate(self, variabelen={}):
-=======
         # TODO: do we always need parantheses?
     
     def evaluate(self,variabelen={}):
->>>>>>> meijs
+
         
         getal1 = self.lhs.evaluate(variabelen)
         getal2 = self.rhs.evaluate(variabelen)
@@ -320,43 +309,7 @@ class BinaryNode(Expression):
             
         return round(ans,3)
         
-    #  
-        
-        
-    # def evaluate(self, variabelen={}):
-        
-        
-        
-    #     print(self.lhs, 'lhs',type(self.lhs))
-    #     print(self.rhs, 'rhs',type(self.rhs))
-    #     getal1 = self.lhs.evaluate(variabelen)
-    #     getal2 = self.rhs.evaluate(variabelen)
-        
-    #     print(self.lhs, 'lhs',type(self.lhs))
-        
-    #     if type(self.lhs) ==  AddNode:
-    #         print('plusje')
-        
-        
-    #     print(getal1 , 'getal1')
-    #     print(getal2, 'getal2')
-       
-    #     if type(getal1) ==  str:
-    #         ans=  getal1 + self.op_symbol +str(getal2)
-            
-            
-    #     elif type(getal2) == str:
-            
-            
-            
-    #         ans =  getal2 + self.op_symbol +str(getal1) 
-            
-            
-    #     else:
-    #         ans =  Constant(eval('%s %s %s' % (getal1, self.op_symbol, getal2)))
-        
-    #     # print(ans, '(lol)')
-        
+    
     
         
        
