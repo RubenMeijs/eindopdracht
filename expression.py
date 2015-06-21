@@ -257,8 +257,7 @@ class BinaryNode(Expression):
             zijde = zijde + 1
             
         return uitvoer
-        # TODO: do we always need parantheses?
-        
+
     def evaluate(self, variabelen={}):
         
         getal1 = self.lhs.evaluate(variabelen)
