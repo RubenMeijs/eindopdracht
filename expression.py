@@ -193,7 +193,7 @@ class Constant(Expression):
         
     def evaluate(self,variabelen):
         return self.value
-        
+    
         
 class Variable(Expression):
     #hier defineren we de variabelen
@@ -216,6 +216,8 @@ class Variable(Expression):
             return variabelen[self.teken]
         else:
             return str(self.teken)
+    
+    
         
     
 
@@ -279,7 +281,36 @@ class BinaryNode(Expression):
         else:
             return Constant(eval('%s %s %s' % (getal1, self.op_symbol, getal2)))
 
-    
+   
+    def numIntegrate(self,variabele,interval):
+        steps_per_unit = 1000
+        steps = (interval[1]-interval[0])*steps_per_unit
+        begin = interval[0]
+        eind = interval[1]
+        ans = 0
+        
+        
+        
+        
+        for i in range(1,steps):
+            xa = begin+ (i*(eind -begin))/steps
+            xb = begin+ ((i+1)*(eind -begin))/steps
+            fa = self.evaluate({variabele: xa })
+            fb = self.evaluate({variabele: xb})
+            
+            Fx = eval('%s %s %s' % (fa,'+',fb))
+            
+            ans += (1/2)*Fx/steps_per_unit
+            
+        
+            
+            
+            
+        return round(ans,3)
+        
+    #  
+        
+        
     # def evaluate(self, variabelen={}):
         
         
