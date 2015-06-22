@@ -20,15 +20,47 @@ def tokenize(string):
     tokens = tokenstring.split() 
     
     
-    #special casing for **:
-    ans = []
+    sub_ans = []
     for t in tokens:
-        if len(ans) > 0 and t == ans[-1] == '*':
-            ans[-1] = '**'
+        if len(sub_ans) > 0 and t == sub_ans[-1] == '*':
+           sub_ans[-1] = '**'
         else:
-            ans.append(t)
-    return ans
+            sub_ans.append(t)
     
+    ans = [sub_ans[0]]
+    i=1
+    
+    
+    while i<len(sub_ans):
+        
+        if (sub_ans[i] == '-' and sub_ans[i-1] in splitchars):
+            
+            if sub_ans[i-1] == '+':
+                ans.pop()
+                ans.append('-')
+                i+=1
+                
+                
+            elif sub_ans[i-1]  == '-':
+                ans.pop()
+                ans.append('+')
+                i += 1
+            
+            elif sub_ans[i-1] == ('*' or '/'):
+                ans.append( '-1')
+                ans.append( '*')
+                i+= 1
+                
+            else:
+                ans.append('-' + sub_ans[i+1])
+                i += 2
+             
+            
+        else:
+            ans.append(sub_ans[i])
+            i+=1
+            
+    return ans
 # check if a string represents a numeric value
 def isnumber(string):
     try:
