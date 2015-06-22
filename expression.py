@@ -32,27 +32,32 @@ def tokenize(string):
     
     
     while i<len(sub_ans):
-        if sub_ans[i] == '-' and sub_ans[i-1] in splitchars:
+        
+        if (sub_ans[i] == '-' and sub_ans[i-1] in splitchars):
             
             if sub_ans[i-1] == '+':
                 ans.pop()
                 ans.append('-')
                 i+=1
                 
+                
             elif sub_ans[i-1]  == '-':
                 ans.pop()
                 ans.append('+')
                 i += 1
-                
-            elif type(sub_ans[i+1]) == (int or float):
-                
             
-            
-            if 
+            elif sub_ans[i-1] == ('*' or '/'):
+                ans.append( '-1')
+                ans.append( '*')
+                i+= 1
                 
-            
-            ans.append('-'+ sub_ans[i+1] )
-            i += 2
+            else:
+                ans.append('-' + sub_ans[i+1])
+                i += 2
+                #type(sub_ans[i+1])  or type(sub_ans[i+1]) ==float
+            # else:
+            #     ans.append('(-' + sub_ans[i+1] + ')')
+            #     i +=2
             
         else:
             ans.append(sub_ans[i])
@@ -304,8 +309,6 @@ class BinaryNode(Expression):
         #bepaal de waarden van lhs en de rhs, neem daarin de ingevulde variable waarden mee
         getal1 = self.lhs.evaluate(variabelen)
         getal2 = self.rhs.evaluate(variabelen)
-        
-        print(type(getal1),type(getal2))
         
         #Als een van de twee géén constante is, dan is 1 van de twee ofwel een variabele, ofwel
         #een compound expressie met een variabele er in. Dit kan dan niet als getal geevalueerd worden
