@@ -54,10 +54,7 @@ def tokenize(string):
             else:
                 ans.append('-' + sub_ans[i+1])
                 i += 2
-                #type(sub_ans[i+1])  or type(sub_ans[i+1]) ==float
-            # else:
-            #     ans.append('(-' + sub_ans[i+1] + ')')
-            #     i +=2
+             
             
         else:
             ans.append(sub_ans[i])
