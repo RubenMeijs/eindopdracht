@@ -328,7 +328,7 @@ class BinaryNode(Expression):
         eind = interval[1]
         ans = 0
         
-        for i in range(1,steps):
+        for i in range(0,steps):
             xa = begin+ (i*(eind -begin))/steps
             xb = begin+ ((i+1)*(eind -begin))/steps
             fa = self.evaluate({variabele: xa })
@@ -339,6 +339,35 @@ class BinaryNode(Expression):
             ans += (1/2)*Fx/steps_per_unit
             
         return round(ans,3)
+    
+    #Numerieke integragie voor 2 variabelen
+    def TwoVnumIntegrate(self,variables,intervals):
+        steps_per_unit = 100
+        
+        steps1 = (intervals[0][1]-intervals[0][0])*steps_per_unit
+        begin1 = intervals[0][0]
+        eind1 = intervals[0][1]
+        
+        steps2 = (intervals[1][1]-intervals[1][0])*steps_per_unit
+        begin2 = intervals[1][0]
+        eind2 = intervals[1][1]
+        
+        ans = 0
+        for i in range(0,steps1):
+            for j in range(0,steps2):
+                xa = begin1+(i*(eind1-begin1))/steps1
+                xb = begin1+((i+1)*(eind1-begin1))/steps1
+                ya = begin2+(j*(eind2-begin2))/steps2
+                yb = begin2+((j+1)*(eind2-begin2))/steps2
+                faa = self.evaluate({variables[0]:xa,variables[1]:ya})
+                fab = self.evaluate({variables[0]:xa,variables[1]:yb})
+                fba = self.evaluate({variables[0]:xb,variables[1]:ya})
+                fbb = self.evaluate({variables[0]:xb,variables[1]:yb})
+                Fx = eval('%s %s %s %s %s %s %s' % (faa,'+',fab,'+',fba,'+',fbb))
+                ans += (1/4)*Fx/(steps_per_unit**2)
+        
+        return round(ans,3)
+
 
 #overloaden van operaties        
 class AddNode(BinaryNode):
