@@ -20,45 +20,14 @@ def tokenize(string):
     tokens = tokenstring.split() 
     
     
-    sub_ans = []
+    ans = []
     for t in tokens:
-        if len(sub_ans) > 0 and t == sub_ans[-1] == '*':
-           sub_ans[-1] = '**'
+        if len(ans) > 0 and t == ans[-1] == '*':
+            ans[-1] = '**'
         else:
-            sub_ans.append(t)
-    
-    ans = [sub_ans[0]]
-    i=1
+            ans.append(t)
     
     
-    while i<len(sub_ans):
-        
-        if (sub_ans[i] == '-' and sub_ans[i-1] in splitchars):
-            
-            if sub_ans[i-1] == '+':
-                ans.pop()
-                ans.append('-')
-                i+=1
-                
-                
-            elif sub_ans[i-1]  == '-':
-                ans.pop()
-                ans.append('+')
-                i += 1
-            
-            elif sub_ans[i-1] == ('*' or '/'):
-                ans.append( '-1')
-                ans.append( '*')
-                i+= 1
-                
-            else:
-                ans.append('-' + sub_ans[i+1])
-                i += 2
-             
-            
-        else:
-            ans.append(sub_ans[i])
-            i+=1
             
     return ans
 # check if a string represents a numeric value
@@ -101,6 +70,9 @@ class Expression():
     
     def __pow__(self,other):
         return PowNode(self,other)
+    
+    def __neg__(self):
+        return NegNode(self)
 
     # basic Shunting-yard algorithm
     def fromString(self, string):
@@ -118,10 +90,14 @@ class Expression():
         # list of operators
 
         oplist = ['+','-', '*', '/','**']
+        neglist = ['-'] 
         #order_op index 0 is order, index 1 is associativity (0=left, 1=right)
         order_op = {'+':[1,0],'-':[1,0], '*':[2,0], '/':[2,0],'**':[3,1], '%':[4,1]}
+        
+        
         for token in tokens:
             
+            # print(token)
             if isnumber(token):
                 # numbers go directly to the output
                 if isint(token):
@@ -131,21 +107,48 @@ class Expression():
                     
             elif token in oplist:
                 
-                # pop operators from the stack to the output until the top is no longer an operator
-                while True:
-                    
-                    if len(stack) == 0 or stack[-1] not in oplist:
-                        break
-                    
-                    # Shunting Yard algoritme
-                    elif (order_op[token][1]==0 and order_op[token][0] <= order_op[stack[-1]][0]
-                        ) or (order_op[token][1]==1 and order_op[token][0]<order_op[stack[-1]][0]):
+                # print(token, 'output[-1]=', output[-1])
+                
+                if token == '-':
+                    # print(True, '-',len(output))
+                    if len(stack)>0:
                         
-                        output.append(stack.pop())
-                    else:
-                        break
+                        if stack[-1] in oplist:
+                            stack.append('~')
+                            ### negatief unairy
+                        elif stack[-1] == '(':
+                            stack.append('~')
+                            ## negatief
+                        else:
+                            output.append(stack.pop())
+                            
+                            # print(output[:],'else')
+                            
+                            ### operator minnetje
+                            
+                           
+                    elif len(output) ==0:
+                        output.append('~')
+                
                     
-                stack.append(token)
+                # pop operators from the stack to the output until the top is no longer an operator
+                else:    
+                    
+                    while True:
+                        
+                        if len(stack) == 0 or stack[-1] not in oplist:
+                            
+                            break
+                        
+                        # Shunting Yard algoritme
+                        elif (order_op[token][1]==0 and order_op[token][0] <= order_op[stack[-1]][0]
+                            ) or (order_op[token][1]==1 and order_op[token][0]<order_op[stack[-1]][0]):
+                            
+                            output.append(stack.pop())
+                        else:
+                            break
+                    stack.append(token)
+                
                 
             elif token == '(':
                 # left parantheses go to the stack
@@ -168,20 +171,25 @@ class Expression():
         
         # output is the variable we use to store the RPN representation of an expression
         self.output = output
-
+        
         # convert RPN to an actual expression tree
         for t in output:
-            if t in oplist:
+            if t in oplist :
                 # let eval and operator overloading take care of figuring out what to do
                 y = stack.pop()
                 x = stack.pop()
                 stack.append(eval('x %s y' % t))
+            elif t =='~':
+                y = stack.pop()
+                stack.append(NegNode(y))
+            # elif t in neglist and stack[-1] in oplist:
+                    
             else:
                 # a constant, push it to the stack
                 stack.append(t)
                 
         # the resulting expression tree is what's left on the stack
-        return stack[0] 
+        return stack[0]
 
 # Storing constant values  
 class Constant(Expression):
@@ -245,6 +253,27 @@ class Variable(Expression):
         else:
             return self
 
+class UnairyNode(Expression):
+    
+    def __init__(self, rhs, op_symbol):
+        self.expressie = rhs
+        self.op_symbol = op_symbol
+
+    def __str__(self):
+        rstring = str(self.expressie)
+        return "- %s" % (rstring)
+        
+
+class NegNode(UnairyNode):
+    """ Het maken van negatieve getallen"""
+    def __init__(self, rhs):
+        super(NegNode, self).__init__(rhs  , '-')
+        
+
+
+    
+            
+  
         
 class BinaryNode(Expression):
     
@@ -365,3 +394,5 @@ class PowNode(BinaryNode):
     """Represents the power operator"""
     def __init__(self, lhs, rhs):
         super(PowNode, self).__init__(lhs, rhs , '**')
+        
+    
