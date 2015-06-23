@@ -367,6 +367,45 @@ class BinaryNode(Expression):
                 ans += (1/4)*Fx/(steps_per_unit**2)
         
         return round(ans,3)
+    
+    #Numerieke integragie voor 3 variabelen
+    def ThreeVnumIntegrate(self,variables,intervals):
+        steps_per_unit = 100
+        
+        steps1 = (intervals[0][1]-intervals[0][0])*steps_per_unit
+        begin1 = intervals[0][0]
+        eind1 = intervals[0][1]
+        
+        steps2 = (intervals[1][1]-intervals[1][0])*steps_per_unit
+        begin2 = intervals[1][0]
+        eind2 = intervals[1][1]
+        
+        steps3 = (intervals[2][1]-intervals[2][0])*steps_per_unit
+        begin3 = intervals[2][0]
+        eind3 = intervals[2][1]
+        
+        ans = 0
+        for i in range(0,steps1):
+            for j in range(0,steps2):
+                for k in range(0,steps3):
+                    xa = begin1+(i*(eind1-begin1))/steps1
+                    xb = begin1+((i+1)*(eind1-begin1))/steps1
+                    ya = begin2+(j*(eind2-begin2))/steps2
+                    yb = begin2+((j+1)*(eind2-begin2))/steps2
+                    za = begin3+(k*(eind3-begin3))/steps3
+                    zb = begin3+((k+1)*(eind3-begin3))/steps3
+                    faaa = self.evaluate({variables[0]:xa,variables[1]:ya,variables[2]:za})
+                    faba = self.evaluate({variables[0]:xa,variables[1]:yb,variables[2]:za})
+                    fbaa = self.evaluate({variables[0]:xb,variables[1]:ya,variables[2]:za})
+                    fbba = self.evaluate({variables[0]:xb,variables[1]:yb,variables[2]:za})
+                    faab = self.evaluate({variables[0]:xa,variables[1]:ya,variables[2]:zb})
+                    fabb = self.evaluate({variables[0]:xa,variables[1]:yb,variables[2]:zb})
+                    fbab = self.evaluate({variables[0]:xb,variables[1]:ya,variables[2]:zb})
+                    fbbb = self.evaluate({variables[0]:xb,variables[1]:yb,variables[2]:zb})
+                    Fx = eval('%s %s %s %s %s %s %s %s %s %s %s %s %s %s %s' % (faaa,'+',faba,'+',fbaa,'+',fbba,'+',faab,'+',fabb,'+',fbab,'+',fbbb))
+                    ans += (1/8)*Fx/(steps_per_unit**3)
+        
+        return round(ans,3)
 
 
 #overloaden van operaties        
