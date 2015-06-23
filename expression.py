@@ -31,36 +31,37 @@ def tokenize(string):
     i=1
     
     
-    while i<len(sub_ans):
-        
-        if (sub_ans[i] == '-' and sub_ans[i-1] in splitchars):
+    # while i<len(sub_ans):
+    #     print(sub_ans[i])
+    #     if (sub_ans[i] == '-' and sub_ans[i-1] in splitchars):
             
-            if sub_ans[i-1] == '+':
-                ans.pop()
-                ans.append('-')
-                i+=1
+    #         if sub_ans[i-1] == '+':
+    #             ans.pop()
+    #             ans.append('-')
+    #             i+=1
                 
                 
-            elif sub_ans[i-1]  == '-':
-                ans.pop()
-                ans.append('+')
-                i += 1
+    #         elif sub_ans[i-1]  == '-':
+    #             ans.pop()
+    #             ans.append('+')
+    #             i += 1
             
-            elif sub_ans[i-1] == ('*' or '/'):
-                ans.append( '-1')
-                ans.append( '*')
-                i+= 1
+    #         elif sub_ans[i-1] == ('*' or '/'):
+    #             ans.append( '-1')
+    #             ans.append( '*')
+    #             i+= 1
                 
-            else:
-                ans.append('-' + sub_ans[i+1])
-                i += 2
+    #         else:
+    #             ans.append('-' + sub_ans[i+1])
+    #             i += 2
              
             
-        else:
-            ans.append(sub_ans[i])
-            i+=1
+    #     else:
+    #         ans.append(sub_ans[i])
+    #         print(ans ,i)
+    #         i+=1
             
-    return ans
+    return sub_ans
 # check if a string represents a numeric value
 def isnumber(string):
     try:
