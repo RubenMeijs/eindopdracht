@@ -20,14 +20,45 @@ def tokenize(string):
     tokens = tokenstring.split() 
     
     
-    ans = []
+    sub_ans = []
     for t in tokens:
-        if len(ans) > 0 and t == ans[-1] == '*':
-            ans[-1] = '**'
+        if len(sub_ans) > 0 and t == sub_ans[-1] == '*':
+           sub_ans[-1] = '**'
         else:
-            ans.append(t)
+            sub_ans.append(t)
+    
+    ans = [sub_ans[0]]
+    i=1
     
     
+    while i<len(sub_ans):
+        
+        if (sub_ans[i] == '-' and sub_ans[i-1] in splitchars):
+            
+            if sub_ans[i-1] == '+':
+                ans.pop()
+                ans.append('-')
+                i+=1
+                
+                
+            elif sub_ans[i-1]  == '-':
+                ans.pop()
+                ans.append('+')
+                i += 1
+            
+            elif sub_ans[i-1] == ('*' or '/'):
+                ans.append( '-1')
+                ans.append( '*')
+                i+= 1
+                
+            else:
+                ans.append('-' + sub_ans[i+1])
+                i += 2
+             
+            
+        else:
+            ans.append(sub_ans[i])
+            i+=1
             
     return ans
 # check if a string represents a numeric value
@@ -70,9 +101,6 @@ class Expression():
     
     def __pow__(self,other):
         return PowNode(self,other)
-    
-    def __neg__(self):
-        return NegNode(self)
 
     # basic Shunting-yard algorithm
     def fromString(self, string):
@@ -90,14 +118,10 @@ class Expression():
         # list of operators
 
         oplist = ['+','-', '*', '/','**']
-        neglist = ['-'] 
         #order_op index 0 is order, index 1 is associativity (0=left, 1=right)
         order_op = {'+':[1,0],'-':[1,0], '*':[2,0], '/':[2,0],'**':[3,1], '%':[4,1]}
-        
-        
         for token in tokens:
             
-            # print(token)
             if isnumber(token):
                 # numbers go directly to the output
                 if isint(token):
@@ -107,48 +131,21 @@ class Expression():
                     
             elif token in oplist:
                 
-                # print(token, 'output[-1]=', output[-1])
-                
-                if token == '-':
-                    # print(True, '-',len(output))
-                    if len(stack)>0:
-                        
-                        if stack[-1] in oplist:
-                            stack.append('~')
-                            ### negatief unairy
-                        elif stack[-1] == '(':
-                            stack.append('~')
-                            ## negatief
-                        else:
-                            output.append(stack.pop())
-                            
-                            # print(output[:],'else')
-                            
-                            ### operator minnetje
-                            
-                           
-                    elif len(output) ==0:
-                        output.append('~')
-                
-                    
                 # pop operators from the stack to the output until the top is no longer an operator
-                else:    
+                while True:
                     
-                    while True:
+                    if len(stack) == 0 or stack[-1] not in oplist:
+                        break
+                    
+                    # Shunting Yard algoritme
+                    elif (order_op[token][1]==0 and order_op[token][0] <= order_op[stack[-1]][0]
+                        ) or (order_op[token][1]==1 and order_op[token][0]<order_op[stack[-1]][0]):
                         
-                        if len(stack) == 0 or stack[-1] not in oplist:
-                            
-                            break
-                        
-                        # Shunting Yard algoritme
-                        elif (order_op[token][1]==0 and order_op[token][0] <= order_op[stack[-1]][0]
-                            ) or (order_op[token][1]==1 and order_op[token][0]<order_op[stack[-1]][0]):
-                            
-                            output.append(stack.pop())
-                        else:
-                            break
-                    stack.append(token)
-                
+                        output.append(stack.pop())
+                    else:
+                        break
+                    
+                stack.append(token)
                 
             elif token == '(':
                 # left parantheses go to the stack
@@ -171,25 +168,20 @@ class Expression():
         
         # output is the variable we use to store the RPN representation of an expression
         self.output = output
-        
+
         # convert RPN to an actual expression tree
         for t in output:
-            if t in oplist :
+            if t in oplist:
                 # let eval and operator overloading take care of figuring out what to do
                 y = stack.pop()
                 x = stack.pop()
                 stack.append(eval('x %s y' % t))
-            elif t =='~':
-                y = stack.pop()
-                stack.append(NegNode(y))
-            # elif t in neglist and stack[-1] in oplist:
-                    
             else:
                 # a constant, push it to the stack
                 stack.append(t)
                 
         # the resulting expression tree is what's left on the stack
-        return stack[0]
+        return stack[0] 
 
 # Storing constant values  
 class Constant(Expression):
@@ -253,27 +245,6 @@ class Variable(Expression):
         else:
             return self
 
-class UnairyNode(Expression):
-    
-    def __init__(self, rhs, op_symbol):
-        self.expressie = rhs
-        self.op_symbol = op_symbol
-
-    def __str__(self):
-        rstring = str(self.expressie)
-        return "- %s" % (rstring)
-        
-
-class NegNode(UnairyNode):
-    """ Het maken van negatieve getallen"""
-    def __init__(self, rhs):
-        super(NegNode, self).__init__(rhs  , '-')
-        
-
-
-    
-            
-  
         
 class BinaryNode(Expression):
     
@@ -357,7 +328,7 @@ class BinaryNode(Expression):
         eind = interval[1]
         ans = 0
         
-        for i in range(1,steps):
+        for i in range(0,steps):
             xa = begin+ (i*(eind -begin))/steps
             xb = begin+ ((i+1)*(eind -begin))/steps
             fa = self.evaluate({variabele: xa })
@@ -368,6 +339,74 @@ class BinaryNode(Expression):
             ans += (1/2)*Fx/steps_per_unit
             
         return round(ans,3)
+    
+    #Numerieke integragie voor 2 variabelen
+    def TwoVnumIntegrate(self,variables,intervals):
+        steps_per_unit = 100
+        
+        steps1 = (intervals[0][1]-intervals[0][0])*steps_per_unit
+        begin1 = intervals[0][0]
+        eind1 = intervals[0][1]
+        
+        steps2 = (intervals[1][1]-intervals[1][0])*steps_per_unit
+        begin2 = intervals[1][0]
+        eind2 = intervals[1][1]
+        
+        ans = 0
+        for i in range(0,steps1):
+            for j in range(0,steps2):
+                xa = begin1+(i*(eind1-begin1))/steps1
+                xb = begin1+((i+1)*(eind1-begin1))/steps1
+                ya = begin2+(j*(eind2-begin2))/steps2
+                yb = begin2+((j+1)*(eind2-begin2))/steps2
+                faa = self.evaluate({variables[0]:xa,variables[1]:ya})
+                fab = self.evaluate({variables[0]:xa,variables[1]:yb})
+                fba = self.evaluate({variables[0]:xb,variables[1]:ya})
+                fbb = self.evaluate({variables[0]:xb,variables[1]:yb})
+                Fx = eval('%s %s %s %s %s %s %s' % (faa,'+',fab,'+',fba,'+',fbb))
+                ans += (1/4)*Fx/(steps_per_unit**2)
+        
+        return round(ans,3)
+    
+    #Numerieke integragie voor 3 variabelen
+    def ThreeVnumIntegrate(self,variables,intervals):
+        steps_per_unit = 100
+        
+        steps1 = (intervals[0][1]-intervals[0][0])*steps_per_unit
+        begin1 = intervals[0][0]
+        eind1 = intervals[0][1]
+        
+        steps2 = (intervals[1][1]-intervals[1][0])*steps_per_unit
+        begin2 = intervals[1][0]
+        eind2 = intervals[1][1]
+        
+        steps3 = (intervals[2][1]-intervals[2][0])*steps_per_unit
+        begin3 = intervals[2][0]
+        eind3 = intervals[2][1]
+        
+        ans = 0
+        for i in range(0,steps1):
+            for j in range(0,steps2):
+                for k in range(0,steps3):
+                    xa = begin1+(i*(eind1-begin1))/steps1
+                    xb = begin1+((i+1)*(eind1-begin1))/steps1
+                    ya = begin2+(j*(eind2-begin2))/steps2
+                    yb = begin2+((j+1)*(eind2-begin2))/steps2
+                    za = begin3+(k*(eind3-begin3))/steps3
+                    zb = begin3+((k+1)*(eind3-begin3))/steps3
+                    faaa = self.evaluate({variables[0]:xa,variables[1]:ya,variables[2]:za})
+                    faba = self.evaluate({variables[0]:xa,variables[1]:yb,variables[2]:za})
+                    fbaa = self.evaluate({variables[0]:xb,variables[1]:ya,variables[2]:za})
+                    fbba = self.evaluate({variables[0]:xb,variables[1]:yb,variables[2]:za})
+                    faab = self.evaluate({variables[0]:xa,variables[1]:ya,variables[2]:zb})
+                    fabb = self.evaluate({variables[0]:xa,variables[1]:yb,variables[2]:zb})
+                    fbab = self.evaluate({variables[0]:xb,variables[1]:ya,variables[2]:zb})
+                    fbbb = self.evaluate({variables[0]:xb,variables[1]:yb,variables[2]:zb})
+                    Fx = eval('%s %s %s %s %s %s %s %s %s %s %s %s %s %s %s' % (faaa,'+',faba,'+',fbaa,'+',fbba,'+',faab,'+',fabb,'+',fbab,'+',fbbb))
+                    ans += (1/8)*Fx/(steps_per_unit**3)
+        
+        return round(ans,3)
+
 
 #overloaden van operaties        
 class AddNode(BinaryNode):
@@ -394,5 +433,3 @@ class PowNode(BinaryNode):
     """Represents the power operator"""
     def __init__(self, lhs, rhs):
         super(PowNode, self).__init__(lhs, rhs , '**')
-        
-    
