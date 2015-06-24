@@ -17,7 +17,9 @@ variabelen aangeleverd met een dictionary.
 
 To do:
 
-- negatie (oftewel 3+-2 en 3*-2 etc.) : Ik weet het niet zeker maar volgens mij maakt hij van ~ een variabelen maar dat is niet helemaal duidelijk, het probleem lijkt te zijn dat hij negatief maken pas na andere operaties doet. dus 2*-4+10 wordt in rpn [2 10 4 + ~ *] 
+- negatie (oftewel 3+-2 en 3*-2 etc.) : 
+RPN gaat nu goed voor negatie, maar hij heeft nu een probleem bij de andere operatoren. Want hij checkt nu of de lijst leeg is, wat zo is en dan gebeurt er niks hij breakt direct de while ==  True
+Ik weet het niet zeker maar volgens mij maakt hij van ~ een variabelen maar dat is niet helemaal duidelijk, het probleem lijkt te zijn dat hij negatief maken pas na andere operaties doet. dus 2*-4+10 wordt in rpn [2 10 4 + ~ *] 
 - Overload van de gelijkheidsoperator om te checken of twee expressiebomen dezelfde berekening voorstellen.
 -  evaluate aanpassen zodat oa 1+x+18 =  19+x wordt, begin van simplify dus
 - functies
