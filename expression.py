@@ -90,10 +90,14 @@ class Expression():
         # list of operators
 
         oplist = ['+','-', '*', '/','**']
-        neglist = ['-'] 
-        #order_op index 0 is order, index 1 is associativity (0=left, 1=right)
-        order_op = {'+':[1,0],'-':[1,0], '*':[2,0], '/':[2,0],'**':[3,1], '%':[4,1]}
+        order_op={'+':AddNode.order}
         
+        # for i in oplist:
+        #     order_op[t] = t.order
+        # print(precendence)
+        #order_op index 0 is order, index 1 is associativity (0=left, 1=right)
+        order_op = {'+':[1,0],'-':[1,0], '*':[2,0], '/':[2,0],'**':[3,1], '%':[4,1], '~':[3,1]}
+       
         
         for token in tokens:
             
@@ -109,28 +113,31 @@ class Expression():
                 
                 # print(token, 'output[-1]=', output[-1])
                 
-                if token == '-':
+                if token == '-' :
+                    
                     # print(True, '-',len(output))
                     if len(stack)>0:
                         
                         if stack[-1] in oplist:
                             stack.append('~')
                             ### negatief unairy
-                        elif stack[-1] == '(':
+                        elif stack[-1] == ')':
+                            
                             stack.append('~')
                             ## negatief
                         else:
-                            output.append(stack.pop())
                             
-                            # print(output[:],'else')
-                            
-                            ### operator minnetje
+                            x = stack.pop()
+                            print(x)
+                            stack.append(x)
                             
                            
                     elif len(output) ==0:
-                        output.append('~')
-                
-                    
+                        
+                        stack.append('~')
+                    else:
+                        
+                        stack.append(token)
                 # pop operators from the stack to the output until the top is no longer an operator
                 else:    
                     
@@ -164,13 +171,13 @@ class Expression():
 
             else:
                 output.append(Variable(token))
+            
+            
 
         # pop any tokens still on the stack to the output
         while len(stack) > 0:
             output.append(stack.pop())
-        
         # output is the variable we use to store the RPN representation of an expression
-        self.output = output
         
         # convert RPN to an actual expression tree
         for t in output:
@@ -187,6 +194,7 @@ class Expression():
             else:
                 # a constant, push it to the stack
                 stack.append(t)
+            
                 
         # the resulting expression tree is what's left on the stack
         return stack[0]
@@ -252,39 +260,49 @@ class Variable(Expression):
             return Constant(variabelen[self.teken])
         else:
             return self
-
-class UnairyNode(Expression):
+            
+class NegNode(Expression):
     
-    def __init__(self, rhs, op_symbol):
-        self.expressie = rhs
-        self.op_symbol = op_symbol
+    def __init__(self, expressie):
+        self.expressie = expressie
 
     def __str__(self):
         rstring = str(self.expressie)
         return "- %s" % (rstring)
-        
 
-class NegNode(UnairyNode):
-    """ Het maken van negatieve getallen"""
-    def __init__(self, rhs):
-        super(NegNode, self).__init__(rhs  , '-')
-        
+    def evaluate(self,variabelen={}):
 
-
-    
+        return Constant(eval("%s %s %s" % (Constant(-1),'*',self.expressie)))
             
-  
         
+        
+        # #bepaal de waarden van lhs en de rhs, neem daarin de ingevulde variable waarden mee
+        # getal1 = self.expressie.evaluate(variabelen)
+        # print(getal1)
+
+        # #Als een van de twee géén constante is, dan is 1 van de twee ofwel een variabele, ofwel
+        # #een compound expressie met een variabele er in. Dit kan dan niet als getal geevalueerd worden
+        # if not isinstance(getal1,Constant):
+        #     return UnairyNode(getal1,self.op_symbol)
+        
+        # #Wel twee constanten? Voer de operatie uit en maak een nieuwe constante aan
+        # else:
+
+        #     return Constant(eval('%s %s' % (self.op_symbol, getal1.constantvalue())))
+            
+       
 class BinaryNode(Expression):
     
     #A node in the expression tree representing a binary operator.
-    order_op = {'+':[1,True],'-':[1,False], '*':[2,True], '/':[2,False],'**':[3,False]}
+    order_op = {'+':[1,True],'-':[1,False], '*':[2,True], '/':[2,False],'**':[3,False],'~':[2,True]}
 
     #initialisatie van BinaryNode
     def __init__(self, lhs, rhs, op_symbol):
         self.lhs = lhs
         self.rhs = rhs
         self.op_symbol = op_symbol
+        
+        
     
     #overloarden bij een gelijk teken
     def __eq__(self, other):
@@ -345,8 +363,10 @@ class BinaryNode(Expression):
             
         #Wel twee constanten? Voer de operatie uit en maak een nieuwe constante aan
         else:
-
-            return Constant(eval('%s %s %s' % (getal1.constantvalue(), self.op_symbol, getal2.constantvalue())))
+            # print('%s %s %s' % (getal1.constantvalue(), self.op_symbol, getal2.constantvalue()))
+            ans = Constant(eval('%s %s %s' % (getal1.constantvalue(), self.op_symbol, getal2.constantvalue())))
+            # print(ans)
+            return ans
 
     
     #Numerieke integratie
@@ -372,27 +392,48 @@ class BinaryNode(Expression):
 #overloaden van operaties        
 class AddNode(BinaryNode):
     """Represents the addition operator"""
+    order = [1, True]
+
+
     def __init__(self, lhs, rhs):
         super(AddNode, self).__init__(lhs, rhs, '+')
 
 class SubNode(BinaryNode):
     """Represents the subtraction operator"""
+    
+    order = [1, False]
+
     def __init__(self, lhs, rhs):
         super(SubNode, self).__init__(lhs, rhs , '-')
+        
 
 class DivNode(BinaryNode):
     """Represents the division operator"""
+    order = [2, False]
+    
+
     def __init__(self, lhs, rhs):
         super(DivNode, self).__init__(lhs, rhs , '/')
 
 class MulNode(BinaryNode):
     """Represents the multiplication operator"""
+    order = [2, True]
+
     def __init__(self, lhs, rhs):
         super(MulNode, self).__init__(lhs, rhs , '*')
 
 class PowNode(BinaryNode):
     """Represents the power operator"""
+    order = [3, False]
+
     def __init__(self, lhs, rhs):
         super(PowNode, self).__init__(lhs, rhs , '**')
         
-    
+
+
+        
+
+
+        
+
+     
