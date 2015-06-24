@@ -290,6 +290,17 @@ class NegNode(Expression):
 
         #     return Constant(eval('%s %s' % (self.op_symbol, getal1.constantvalue())))
             
+
+class FunctionNode(Expression):
+    
+    def __init__(self, getal):
+        self.getal = getal
+
+
+class SinNode(FunctionNode):
+    
+    print("Sin(X)")
+
        
 class BinaryNode(Expression):
     
