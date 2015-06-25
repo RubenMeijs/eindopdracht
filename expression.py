@@ -406,6 +406,41 @@ class BinaryNode(Expression):
                     ans += (1/8)*Fx/(steps_per_unit**3)
         
         return round(ans,3)
+    
+    #Nulpunt vinden op gespecificeerd interval
+    def findRoot(self,expression,variable,interval):
+        if expression.evaluate({variable:interval[0]}).constantvalue()<expression.evaluate({variable:interval[1]}).constantvalue():
+            a = interval[0]
+            b = interval[1]
+        else:
+            a = interval[1]
+            b = interval[0]
+        
+        m = (a+b)/2
+        delta = 0.0001
+        
+        if abs(b-a)<=delta:
+            return m
+        
+        if expression.evaluate({variable:m}).constantvalue()<=0:
+            newinterval = [m,b]
+            return self.findRoot(expression,variable,newinterval)
+        else:
+            newinterval = [a,m]
+            return self.findRoot(expression,variable,newinterval)
+    
+    #Numeriek vergelijkingen oplossen
+    def numSolver(self,left,right,variable,interval):
+        epsilon = 0.01
+        solutions = []
+        nulexpression = BinaryNode(left, right, '-')
+        i = interval[0]
+        while i+epsilon<=interval[1]:
+            if (nulexpression.evaluate({variable:i}).constantvalue()<=0 and nulexpression.evaluate({variable:i+epsilon}).constantvalue()>=0) or (nulexpression.evaluate({variable:i}).constantvalue()>=0 and nulexpression.evaluate({variable:i+epsilon}).constantvalue()<=0):
+                nul = self.findRoot(nulexpression,variable,[i,i+epsilon])
+                solutions.append(nul)
+            i += epsilon
+        return solutions
 
 
 #overloaden van operaties        
