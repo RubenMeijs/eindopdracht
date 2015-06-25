@@ -98,7 +98,7 @@ class Expression():
         #     order_op[t] = t.order
         # print(precendence)
         #order_op index 0 is order, index 1 is associativity (0=left, 1=right)
-        order_op = {'+':[1,0],'-':[1,0], '*':[2,0], '/':[2,0],'**':[3,1],  '~':[3,1]}
+        order_op = {'+':[1,0],'-':[1,0], '*':[2,0], '/':[2,0],'**':[3,1],  '~':[2,0]}
         
         i = 0 
         while i< len(tokens):
@@ -121,37 +121,26 @@ class Expression():
                 
                 # print(tokens[i], 'output[-1]=', output[-1])
                 
-                if tokens[i] == '-' :       
-                    # print(True, '-',len(output))
-                    #hier controleer ik of het minnetje niet de eerste invoer is, want dan weten we zeker dat het een negatie is
-                    if len(stack)>0:
+                if tokens[i] == '-' and (
+                    tokens[i-1] in oplist + ['('] or len(output)==0):  
+                    stack.append('~')    
                         
-                        if tokens[i-1] in oplist:
-                            
-                            output.append(tokens[i+1])
-                            output.append('~')
-                            output.append(stack.pop())
-                            
-                            i += 1
-                        elif tokens[i-1] == '(':
-                            output.append(tokens[i+1])
-                            output.append('~')
-                            i += 1
-                            ### negatief unairy
-                        #anders is het dus gewoon een normale invoer en moet je dus gewoon ene minnetje appenden
-                        # om een of andere reden moet ik hier wel de stack poppen maar waarom weet ik niet meer...
-                        else:
-                            x = stack.pop()
-                            output.append(x)
-                            stack.append(tokens[i])            
-                            # output.append(x)
-                    elif len(output) ==0:
-                        output.append(tokens[i+1])
-                        output.append('~')
-                        i += 1
-                    else:
-                        
-                        stack.append(tokens[i])
+                    # # print(True, '-',len(output))
+                    # #hier controleer ik of het minnetje niet de eerste invoer is, want dan weten we zeker dat het een negatie is
+                    # if len(stack)>0:
+                    #     if tokens[i-1] in oplist:
+                    #         stack.append('~')
+                    #     elif tokens[i-1] == '(':
+                    #         stack.append('~')
+                    #         ### negatief unairy
+                    #     #anders is het dus gewoon een normale invoer en moet je dus gewoon ene minnetje appenden
+                    #     # om een of andere reden moet ik hier wel de stack poppen maar waarom weet ik niet meer...
+                    #     else:
+                    #         stack.append(tokens[i])
+                    # elif len(output) ==0:
+                    #     stack.append('~')
+                    # else:
+                    #     stack.append(tokens[i])
                 # pop operators from the stack to the output until the top is no longer an operator
                 else:    
                     while True:
@@ -193,6 +182,7 @@ class Expression():
         # pop any tokens still on the stack to the output
         while len(stack) > 0:
             output.append(stack.pop())
+        
         # output is the variable we use to store the RPN representation of an expression
         # convert RPN to an actual expression tree
         for t in output:
@@ -357,10 +347,9 @@ class BinaryNode(Expression):
         
         #ga beide kanten langs en ga na of deze kant haakjes nodig heeft
         for side in [self.lhs, self.rhs]:
-            
             # is het een binarynode? bepaal de operatie orde een laag naar beneden en de huidige operatieorde
             # bepaal ook of de huidige operatie associatief is
-            if isinstance(side, BinaryNode):
+            if isinstance(side, BinaryNode): 
                 order_lower = self.order_op[side.op_symbol][0]
                 order_this = self.order_op[self.op_symbol][0]
                 this_ass = self.order_op[self.op_symbol][1]
@@ -371,6 +360,17 @@ class BinaryNode(Expression):
                     uitvoer = uitvoer + "(%s)" % (str(side))
                 else:
                     uitvoer = uitvoer + str(side)
+            
+            # elif isinstance(side, NegNode):
+            #     order_lower = self.order_op[side.op_symbol][0]
+            #     order_this = 2
+            #     this_ass = True
+                
+            #     if order_lower < order_this or (not this_ass and order_lower <= order_this and zijde == 1):
+            #         uitvoer = uitvoer + "(%s)" % (str(side))
+            #     else:
+            #         uitvoer = uitvoer + str(side)
+                
             
             # geen binarynode? Dan kan tostring worden aangeroepen
             else:
