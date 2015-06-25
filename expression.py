@@ -441,6 +441,8 @@ class BinaryNode(Expression):
                 solutions.append(nul)
             i += epsilon
         return solutions
+    
+    Hallo!
 
 
 #overloaden van operaties        
