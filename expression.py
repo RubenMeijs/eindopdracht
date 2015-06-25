@@ -28,6 +28,7 @@ def tokenize(string):
             ans.append(t)
     
     
+    
             
     return ans
 # check if a string represents a numeric value
@@ -90,78 +91,93 @@ class Expression():
         # list of operators
 
         oplist = ['+','-', '*', '/','**']
+        funclist = ['sin']
         order_op={'+':AddNode.order}
         
         # for i in oplist:
         #     order_op[t] = t.order
         # print(precendence)
         #order_op index 0 is order, index 1 is associativity (0=left, 1=right)
-        order_op = {'+':[1,0],'-':[1,0], '*':[2,0], '/':[2,0],'**':[3,1], '%':[4,1], '~':[3,1]}
-       
+        order_op = {'+':[1,0],'-':[1,0], '*':[2,0], '/':[2,0],'**':[3,1],  '~':[3,1]}
         
-        for token in tokens:
-            
-            # print(token)
-            if isnumber(token):
+        i = 0 
+        while i< len(tokens):
+                      
+            # print(tokens[i])
+            if isnumber(tokens[i]):
                 # numbers go directly to the output
-                if isint(token):
-                    output.append(Constant(int(token)))
+                if isint(tokens[i]):
+                    output.append(Constant(int(tokens[i])))
                 else:
-                    output.append(Constant(float(token)))
-                    
-            elif token in oplist:
+                    output.append(Constant(float(tokens[i])))
+            elif tokens[i] in funclist:
                 
-                # print(token, 'output[-1]=', output[-1])
-                
-                if token == '-' :
+                """ Binnen haakjes moet gezien owrden als de invoer van een functie"""
+                output.append(tokens[i+1])
+                output.append(tokens[i])
+                i += 1
                     
+            elif tokens[i] in oplist:
+                
+                # print(tokens[i], 'output[-1]=', output[-1])
+                
+                if tokens[i] == '-' :       
                     # print(True, '-',len(output))
+                    #hier controleer ik of het minnetje niet de eerste invoer is, want dan weten we zeker dat het een negatie is
                     if len(stack)>0:
                         
-                        if stack[-1] in oplist:
-                            stack.append('~')
+                        if tokens[i-1] in oplist:
+                            
+                            output.append(tokens[i+1])
+                            output.append('~')
+                            output.append(stack.pop())
+                            
+                            i += 1
+                        elif tokens[i-1] == '(':
+                            output.append(tokens[i+1])
+                            output.append('~')
+                            i += 1
                             ### negatief unairy
-                        elif stack[-1] == ')':
-                            
-                            stack.append('~')
-                            ## negatief
+                        #anders is het dus gewoon een normale invoer en moet je dus gewoon ene minnetje appenden
+                        # om een of andere reden moet ik hier wel de stack poppen maar waarom weet ik niet meer...
                         else:
-                            
                             x = stack.pop()
-                            print(x)
-                            stack.append(x)
-                            
-                           
+                            output.append(x)
+                            stack.append(tokens[i])            
+                            # output.append(x)
                     elif len(output) ==0:
-                        
-                        stack.append('~')
+                        output.append(tokens[i+1])
+                        output.append('~')
+                        i += 1
                     else:
                         
-                        stack.append(token)
+                        stack.append(tokens[i])
                 # pop operators from the stack to the output until the top is no longer an operator
                 else:    
-                    
                     while True:
                         
                         if len(stack) == 0 or stack[-1] not in oplist:
-                            
                             break
                         
                         # Shunting Yard algoritme
-                        elif (order_op[token][1]==0 and order_op[token][0] <= order_op[stack[-1]][0]
-                            ) or (order_op[token][1]==1 and order_op[token][0]<order_op[stack[-1]][0]):
+                        elif (order_op[tokens[i]][1]==0 and order_op[tokens[i]][0] <= order_op[stack[-1]][0]
+                            ) or (order_op[tokens[i]][1]==1 and order_op[tokens[i]][0]<order_op[stack[-1]][0]):
+                            
                             
                             output.append(stack.pop())
                         else:
                             break
-                    stack.append(token)
+                    
+                    stack.append(tokens[i])
+                   
+            
                 
                 
-            elif token == '(':
+            elif tokens[i] == '(':
                 # left parantheses go to the stack
-                stack.append(token)
+                stack.append(tokens[i])
                 
-            elif token == ')':
+            elif tokens[i] == ')':
                 # right paranthesis: pop everything upto the last left paranthesis to the output
                 while not stack[-1] == '(':
                     output.append(stack.pop())
@@ -170,15 +186,14 @@ class Expression():
                 stack.pop()
 
             else:
-                output.append(Variable(token))
+                output.append(Variable(tokens[i]))
             
-            
-
+            i += 1
+        
         # pop any tokens still on the stack to the output
         while len(stack) > 0:
             output.append(stack.pop())
         # output is the variable we use to store the RPN representation of an expression
-        
         # convert RPN to an actual expression tree
         for t in output:
             if t in oplist :
@@ -186,18 +201,24 @@ class Expression():
                 y = stack.pop()
                 x = stack.pop()
                 stack.append(eval('x %s y' % t))
+            elif t in funclist:
+                x = stack.pop()
+                stack.append('%s(x)' %t) 
             elif t =='~':
                 y = stack.pop()
                 stack.append(NegNode(y))
             # elif t in neglist and stack[-1] in oplist:
                     
             else:
+                
                 # a constant, push it to the stack
                 stack.append(t)
             
                 
         # the resulting expression tree is what's left on the stack
         return stack[0]
+
+
 
 # Storing constant values  
 class Constant(Expression):
@@ -225,7 +246,7 @@ class Constant(Expression):
         return float(self.value)
     
     # if evaluation is called, the constant is returned   
-    def evaluate(self,variabelen):
+    def evaluate(self,variabelen={}):
         return self
     
     # returns the value without casting a specific type    
@@ -255,7 +276,7 @@ class Variable(Expression):
             return False
             
     #evaluate geeft een constante waarde als x is gesubsitueerd, anders de (ongesubstitueerde) variabele zelf      
-    def evaluate(self,variabelen):
+    def evaluate(self,variabelen ={}):
         if self.teken in variabelen:
             return Constant(variabelen[self.teken])
         else:
@@ -271,8 +292,8 @@ class NegNode(Expression):
         return "- %s" % (rstring)
 
     def evaluate(self,variabelen={}):
-
-        return Constant(eval("%s %s %s" % (Constant(-1),'*',self.expressie)))
+        print(self.expressie,type(self.expressie))
+        return eval("%s %s %s" % (Constant(-1),'*',self.expressie.evaluate(variabelen)))
             
         
         
@@ -293,13 +314,19 @@ class NegNode(Expression):
 
 class FunctionNode(Expression):
     
-    def __init__(self, getal):
-        self.getal = getal
-
+    def __init__(self, invoer,functie):
+        self.functie = functie
+        self.invoer = invoer
+    
+    def __str__(self):
+        return "%s ( %s)" % (self.functie,self.invoer)
 
 class SinNode(FunctionNode):
     
-    print("Sin(X)")
+    def __init__(self, invoer):
+        super(SinNode,self).__init__(self,invoer,math.sin)
+
+    
 
        
 class BinaryNode(Expression):
@@ -376,8 +403,14 @@ class BinaryNode(Expression):
         else:
             # print('%s %s %s' % (getal1.constantvalue(), self.op_symbol, getal2.constantvalue()))
             ans = Constant(eval('%s %s %s' % (getal1.constantvalue(), self.op_symbol, getal2.constantvalue())))
-            # print(ans)
+            
             return ans
+        
+    
+    
+        
+        
+        
 
     
     #Numerieke integratie
