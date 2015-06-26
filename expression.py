@@ -1,5 +1,6 @@
 import math
 import sys
+import itertools
 
 def tokenize(string):
     #split a string into mathematical tokens
@@ -321,89 +322,68 @@ class BinaryNode(Expression):
 
     
     #Numerieke integratie
-    def numIntegrate(self,variabele,interval):
-        steps_per_unit = 1000
-        steps = (interval[1]-interval[0])*steps_per_unit
-        begin = interval[0]
-        eind = interval[1]
-        ans = 0
-        
-        for i in range(0,steps):
-            xa = begin+ (i*(eind -begin))/steps
-            xb = begin+ ((i+1)*(eind -begin))/steps
-            fa = self.evaluate({variabele: xa })
-            fb = self.evaluate({variabele: xb})
+    def numIntegrate(self,variables,intervals):
+        if isinstance(variables,str):
+            steps_per_unit = 1000
+            steps1 = (intervals[1]-intervals[0])*steps_per_unit
+            begin1 = intervals[0]
+            eind1 = intervals[1]
+            ans = 0
             
-            Fx = eval('%s %s %s' % (fa,'+',fb))
+            for i in range(0,steps1):
+                x = [begin1+(i*(eind1-begin1))/steps1, begin1+((i+1)*(eind1-begin1))/steps1]
+                for xpunt in x:
+                    f = self.evaluate({variables[0]:xpunt})
+                    ans += (1/2)*eval('%s' % f)/steps_per_unit
+        
+        elif len(variables)==2:
+            steps_per_unit = 100
             
-            ans += (1/2)*Fx/steps_per_unit
+            steps1 = (intervals[0][1]-intervals[0][0])*steps_per_unit
+            begin1 = intervals[0][0]
+            eind1 = intervals[0][1]
             
-        return round(ans,3)
-    
-    #Numerieke integragie voor 2 variabelen
-    def TwoVnumIntegrate(self,variables,intervals):
-        steps_per_unit = 100
+            steps2 = (intervals[1][1]-intervals[1][0])*steps_per_unit
+            begin2 = intervals[1][0]
+            eind2 = intervals[1][1]
+            
+            ans = 0
+            for i in range(0,steps1):
+                for j in range(0,steps2):
+                    x = [begin1+(i*(eind1-begin1))/steps1, begin1+((i+1)*(eind1-begin1))/steps1]
+                    y = [begin2+(j*(eind2-begin2))/steps2, begin2+((j+1)*(eind2-begin2))/steps2]
+                    for xpunt in x:
+                        for ypunt in y:
+                            f = self.evaluate({variables[0]:xpunt,variables[1]:ypunt})
+                            ans += (1/4)*eval('%s' % f)/(steps_per_unit**2)
         
-        steps1 = (intervals[0][1]-intervals[0][0])*steps_per_unit
-        begin1 = intervals[0][0]
-        eind1 = intervals[0][1]
-        
-        steps2 = (intervals[1][1]-intervals[1][0])*steps_per_unit
-        begin2 = intervals[1][0]
-        eind2 = intervals[1][1]
-        
-        ans = 0
-        for i in range(0,steps1):
-            for j in range(0,steps2):
-                xa = begin1+(i*(eind1-begin1))/steps1
-                xb = begin1+((i+1)*(eind1-begin1))/steps1
-                ya = begin2+(j*(eind2-begin2))/steps2
-                yb = begin2+((j+1)*(eind2-begin2))/steps2
-                faa = self.evaluate({variables[0]:xa,variables[1]:ya})
-                fab = self.evaluate({variables[0]:xa,variables[1]:yb})
-                fba = self.evaluate({variables[0]:xb,variables[1]:ya})
-                fbb = self.evaluate({variables[0]:xb,variables[1]:yb})
-                Fx = eval('%s %s %s %s %s %s %s' % (faa,'+',fab,'+',fba,'+',fbb))
-                ans += (1/4)*Fx/(steps_per_unit**2)
-        
-        return round(ans,3)
-    
-    #Numerieke integragie voor 3 variabelen
-    def ThreeVnumIntegrate(self,variables,intervals):
-        steps_per_unit = 100
-        
-        steps1 = (intervals[0][1]-intervals[0][0])*steps_per_unit
-        begin1 = intervals[0][0]
-        eind1 = intervals[0][1]
-        
-        steps2 = (intervals[1][1]-intervals[1][0])*steps_per_unit
-        begin2 = intervals[1][0]
-        eind2 = intervals[1][1]
-        
-        steps3 = (intervals[2][1]-intervals[2][0])*steps_per_unit
-        begin3 = intervals[2][0]
-        eind3 = intervals[2][1]
-        
-        ans = 0
-        for i in range(0,steps1):
-            for j in range(0,steps2):
-                for k in range(0,steps3):
-                    xa = begin1+(i*(eind1-begin1))/steps1
-                    xb = begin1+((i+1)*(eind1-begin1))/steps1
-                    ya = begin2+(j*(eind2-begin2))/steps2
-                    yb = begin2+((j+1)*(eind2-begin2))/steps2
-                    za = begin3+(k*(eind3-begin3))/steps3
-                    zb = begin3+((k+1)*(eind3-begin3))/steps3
-                    faaa = self.evaluate({variables[0]:xa,variables[1]:ya,variables[2]:za})
-                    faba = self.evaluate({variables[0]:xa,variables[1]:yb,variables[2]:za})
-                    fbaa = self.evaluate({variables[0]:xb,variables[1]:ya,variables[2]:za})
-                    fbba = self.evaluate({variables[0]:xb,variables[1]:yb,variables[2]:za})
-                    faab = self.evaluate({variables[0]:xa,variables[1]:ya,variables[2]:zb})
-                    fabb = self.evaluate({variables[0]:xa,variables[1]:yb,variables[2]:zb})
-                    fbab = self.evaluate({variables[0]:xb,variables[1]:ya,variables[2]:zb})
-                    fbbb = self.evaluate({variables[0]:xb,variables[1]:yb,variables[2]:zb})
-                    Fx = eval('%s %s %s %s %s %s %s %s %s %s %s %s %s %s %s' % (faaa,'+',faba,'+',fbaa,'+',fbba,'+',faab,'+',fabb,'+',fbab,'+',fbbb))
-                    ans += (1/8)*Fx/(steps_per_unit**3)
+        elif len(variables)==3:
+            steps_per_unit = 10
+            
+            steps1 = (intervals[0][1]-intervals[0][0])*steps_per_unit
+            begin1 = intervals[0][0]
+            eind1 = intervals[0][1]
+            
+            steps2 = (intervals[1][1]-intervals[1][0])*steps_per_unit
+            begin2 = intervals[1][0]
+            eind2 = intervals[1][1]
+            
+            steps3 = (intervals[2][1]-intervals[2][0])*steps_per_unit
+            begin3 = intervals[2][0]
+            eind3 = intervals[2][1]
+            
+            ans = 0
+            for i in range(0,steps1):
+                for j in range(0,steps2):
+                    for k in range(0,steps3):
+                        x = [begin1+(i*(eind1-begin1))/steps1, begin1+((i+1)*(eind1-begin1))/steps1]
+                        y = [begin2+(j*(eind2-begin2))/steps2, begin2+((j+1)*(eind2-begin2))/steps2]
+                        z = [begin3+(k*(eind3-begin3))/steps3, begin3+((k+1)*(eind3-begin3))/steps3]
+                        for xpunt in x:
+                            for ypunt in y:
+                                for zpunt in z:
+                                    f = self.evaluate({variables[0]:xpunt,variables[1]:ypunt,variables[2]:zpunt})
+                                    ans += (1/8)*eval('%s' % f)/(steps_per_unit**3)
         
         return round(ans,3)
     
