@@ -18,9 +18,18 @@ variabelen aangeleverd met een dictionary.
 
 To do:
 
+<<<<<<< HEAD
 - negatie (oftewel 3+-2 en 3*-2 etc.)
 
 -  evaluate aanpassen zodat oa 1+x+18 =  19+x wordt, begin van simplify dus, meijs mee bezig
+=======
+- negatie (oftewel 3+-2 en 3*-2 etc.) : 
+Het probleem is op het moment met aftrekken, hij ziet dat stack niet leeg is en dan verwacht hij dat het een negatief is maar dat is hij ook niet en dan gebeurt er maar niks waardoor de rest van de operatoren niet op de goede plekken komen te staan
+Ik weet het niet zeker maar volgens mij maakt hij van ~ een variabelen maar dat is niet helemaal duidelijk, het probleem lijkt te zijn dat hij negatief maken pas na andere operaties doet. dus 2*-4+10 wordt in rpn [2 10 4 + ~ *] 
+het lijkt te liggen aan de manier waarop we checken of het vorige teken een operator was, want daar gaat het fout
+- Overload van de gelijkheidsoperator om te checken of twee expressiebomen dezelfde berekening voorstellen.
+-  evaluate aanpassen zodat oa 1+x+18 =  19+x wordt, begin van simplify dus
+>>>>>>> 2976875ccc1363da77064335007f79043da0021b
 - functies
     - sin, cos, tan en hun inverse
     - log
