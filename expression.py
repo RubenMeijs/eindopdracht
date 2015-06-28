@@ -92,15 +92,16 @@ class Expression():
 
         oplist = ['+','-', '*', '/','**']
         funclist = ['sin']
-        order_op={'+':AddNode.order}
+        # order_op={'+':AddNode.order}
         
         # for i in oplist:
         #     order_op[t] = t.order
         # print(precendence)
         #order_op index 0 is order, index 1 is associativity (0=left, 1=right)
-        order_op = {'+':[1,0],'-':[1,0], '*':[2,0], '/':[2,0],'**':[3,1],  '~':[2,0]}
+        order_op = {'+':[1,0],'-':[1,0], '*':[2,0], '/':[2,0],'**':[3,1],  '~':[5,1]}
         
         i = 0 
+        
         while i< len(tokens):
                       
             # print(tokens[i])
@@ -142,21 +143,22 @@ class Expression():
                     # else:
                     #     stack.append(tokens[i])
                 # pop operators from the stack to the output until the top is no longer an operator
-                else:    
+                else:  
                     while True:
-                        
-                        if len(stack) == 0 or stack[-1] not in oplist:
+                        if len(stack) == 0 or stack[-1] not in oplist+['~']:
                             break
+                        
+                        elif stack[-1] == '~':
+                            output.append(stack.pop())
                         
                         # Shunting Yard algoritme
                         elif (order_op[tokens[i]][1]==0 and order_op[tokens[i]][0] <= order_op[stack[-1]][0]
                             ) or (order_op[tokens[i]][1]==1 and order_op[tokens[i]][0]<order_op[stack[-1]][0]):
                             
-                            
                             output.append(stack.pop())
                         else:
                             break
-                    
+                        
                     stack.append(tokens[i])
                    
             
@@ -181,9 +183,9 @@ class Expression():
         
         # pop any tokens still on the stack to the output
         while len(stack) > 0:
-            output.append(stack.pop())
-        
+            output.append(stack.pop())    
         # output is the variable we use to store the RPN representation of an expression
+        self.output =output
         # convert RPN to an actual expression tree
         for t in output:
             if t in oplist :
@@ -215,6 +217,8 @@ class Constant(Expression):
     """Represents a constant value"""
     def __init__(self, value):
         self.value = value
+        self.precendence =10
+        self.op_symbol = "COnstant"
     
     # Overload of equality sign   
     def __eq__(self, other):
@@ -276,15 +280,23 @@ class NegNode(Expression):
     
     def __init__(self, expressie):
         self.expressie = expressie
+        self.op_symbol = '~'
+        self.precendence = 2
+      
+
 
     def __str__(self):
-        rstring = str(self.expressie)
-        return "- %s" % (rstring)
+        if self.expressie.precendence < self.precendence:
+            return "- (%s)" % (self.expressie)
+        else:
+            return "- %s" % (self.expressie)
 
     def evaluate(self,variabelen={}):
-        print(self.expressie,type(self.expressie))
-        return eval("%s %s %s" % (Constant(-1),'*',self.expressie.evaluate(variabelen)))
-            
+        getal = self.expressie.evaluate(variabelen)
+        if isinstance(getal,Constant):
+            return Constant(eval("%s %s %s" % (Constant(-1),'*',getal)))
+        else:
+            return "- %s" % (getal)
         
         
         # #bepaal de waarden van lhs en de rhs, neem daarin de ingevulde variable waarden mee
@@ -322,14 +334,17 @@ class SinNode(FunctionNode):
 class BinaryNode(Expression):
     
     #A node in the expression tree representing a binary operator.
-    order_op = {'+':[1,True],'-':[1,False], '*':[2,True], '/':[2,False],'**':[3,False],'~':[2,True]}
+    # order_op = {'+':[1,True],'-':[1,False], '*':[2,True], '/':[2,False],'**':[3,False],'~':[4,False]}
 
     #initialisatie van BinaryNode
     def __init__(self, lhs, rhs, op_symbol):
         self.lhs = lhs
         self.rhs = rhs
         self.op_symbol = op_symbol
+        self.precendence = self.precendence
+        self.associatief = self.associatief
         
+        # print(self.precendence , "precendence", op_symbol, self.associatief)
         
     
     #overloarden bij een gelijk teken
@@ -344,37 +359,51 @@ class BinaryNode(Expression):
         uitvoer = ""
         
         zijde = 0 #administreer of we de linker of rechter zijde bekijken (0 = lhs)
-        
         #ga beide kanten langs en ga na of deze kant haakjes nodig heeft
+        
+        
+        
+        
         for side in [self.lhs, self.rhs]:
+            
+           
             # is het een binarynode? bepaal de operatie orde een laag naar beneden en de huidige operatieorde
             # bepaal ook of de huidige operatie associatief is
-            if isinstance(side, BinaryNode): 
-                order_lower = self.order_op[side.op_symbol][0]
-                order_this = self.order_op[self.op_symbol][0]
-                this_ass = self.order_op[self.op_symbol][1]
+            if isinstance(self,BinaryNode):
+                
+                order_lower = side.precendence
+                order_this = self.precendence
+                this_ass =  self.associatief
+                # print(order_lower)
+                # print(order_this)
+                # print(order_lower, order_this)
+                # if order_lower != 10:
+                    # print(side , "side",self.lhs,"self.lhs", self.rhs)
+                    # print(side.op_symbol)
+                    # print(self.op_symbol)
+                # print(order_this)    
+                    # print(uitvoer)
+                
                 
                 #indien ofwel orde 1 laag dieper minder groot is dan de huidige, dan zijn haakjes nodig
                 #haakjes zijn ook nodig als de huidige operatie niet associatief is 
-                if order_lower < order_this or (not this_ass and order_lower <= order_this and zijde == 1):
+                if order_lower < order_this or (not this_ass and order_lower == order_this and zijde ==1):
+                    
                     uitvoer = uitvoer + "(%s)" % (str(side))
+                    
                 else:
                     uitvoer = uitvoer + str(side)
             
-            # elif isinstance(side, NegNode):
-            #     order_lower = self.order_op[side.op_symbol][0]
-            #     order_this = 2
-            #     this_ass = True
-                
-            #     if order_lower < order_this or (not this_ass and order_lower <= order_this and zijde == 1):
-            #         uitvoer = uitvoer + "(%s)" % (str(side))
-            #     else:
-            #         uitvoer = uitvoer + str(side)
-                
+            
+                    
+            elif isinstance(self, NegNode):
+                print ("negnode")
+           
+            
             
             # geen binarynode? Dan kan tostring worden aangeroepen
-            else:
-                uitvoer = uitvoer + str(side)
+            
+                
             
             # als de huidige zijde de lhs is, dan moet het operatiesymbool worden toegevoegd    
             if zijde == 0:
@@ -436,41 +465,47 @@ class BinaryNode(Expression):
 #overloaden van operaties        
 class AddNode(BinaryNode):
     """Represents the addition operator"""
-    order = [1, True]
+    
+    
+    # order = [1, True]
 
 
     def __init__(self, lhs, rhs):
+        self.precendence = 1
+        self.associatief = True
         super(AddNode, self).__init__(lhs, rhs, '+')
 
 class SubNode(BinaryNode):
     """Represents the subtraction operator"""
-    
-    order = [1, False]
 
     def __init__(self, lhs, rhs):
+        self.precendence = 1
+        self.associatief = False
         super(SubNode, self).__init__(lhs, rhs , '-')
         
 
 class DivNode(BinaryNode):
     """Represents the division operator"""
-    order = [2, False]
-    
 
     def __init__(self, lhs, rhs):
+        self.precendence = 2
+        self.associatief = False
         super(DivNode, self).__init__(lhs, rhs , '/')
 
 class MulNode(BinaryNode):
     """Represents the multiplication operator"""
-    order = [2, True]
 
     def __init__(self, lhs, rhs):
+        self.precendence = 2
+        self.associatief = True
         super(MulNode, self).__init__(lhs, rhs , '*')
 
 class PowNode(BinaryNode):
     """Represents the power operator"""
-    order = [3, False]
 
     def __init__(self, lhs, rhs):
+        self.precendence = 3
+        self.associatief = False
         super(PowNode, self).__init__(lhs, rhs , '**')
         
 
