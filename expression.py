@@ -75,6 +75,9 @@ class Expression():
     
     def __neg__(self):
         return NegNode(self)
+    
+    def sin(self):
+        return SinNode('sin', self)
 
     # basic Shunting-yard algorithm
     def fromString(self, string):
@@ -93,6 +96,7 @@ class Expression():
 
         oplist = ['+','-', '*', '/','**']
         funclist = ['sin']
+        funcuitvoer  = { 'sin' : SinNode}
         # order_op={'+':AddNode.order}
         
         # for i in oplist:
@@ -104,7 +108,6 @@ class Expression():
         i = 0 
         
         while i< len(tokens):
-                      
             # print(tokens[i])
             if isnumber(tokens[i]):
                 # numbers go directly to the output
@@ -112,12 +115,11 @@ class Expression():
                     output.append(Constant(int(tokens[i])))
                 else:
                     output.append(Constant(float(tokens[i])))
+                    
             elif tokens[i] in funclist:
-                
                 """ Binnen haakjes moet gezien owrden als de invoer van een functie"""
-                output.append(tokens[i+1])
-                output.append(tokens[i])
-                i += 1
+                stack.append(tokens[i])
+                
                     
             elif tokens[i] in oplist:
                 
@@ -126,24 +128,7 @@ class Expression():
                 if tokens[i] == '-' and (
                     tokens[i-1] in oplist + ['('] or len(output)==0):  
                     stack.append('~')    
-                        
-                    # # print(True, '-',len(output))
-                    # #hier controleer ik of het minnetje niet de eerste invoer is, want dan weten we zeker dat het een negatie is
-                    # if len(stack)>0:
-                    #     if tokens[i-1] in oplist:
-                    #         stack.append('~')
-                    #     elif tokens[i-1] == '(':
-                    #         stack.append('~')
-                    #         ### negatief unairy
-                    #     #anders is het dus gewoon een normale invoer en moet je dus gewoon ene minnetje appenden
-                    #     # om een of andere reden moet ik hier wel de stack poppen maar waarom weet ik niet meer...
-                    #     else:
-                    #         stack.append(tokens[i])
-                    # elif len(output) ==0:
-                    #     stack.append('~')
-                    # else:
-                    #     stack.append(tokens[i])
-                # pop operators from the stack to the output until the top is no longer an operator
+                     
                 else:  
                     while True:
                         if len(stack) == 0 or stack[-1] not in oplist+['~']:
@@ -176,7 +161,9 @@ class Expression():
                 
                 # pop the left paranthesis from the stack (but not to the output)
                 stack.pop()
-
+                if len(stack)> 0 and stack[-1] in funclist:
+                    output.append(stack.pop())
+                
             else:
                 output.append(Variable(tokens[i]))
             
@@ -196,7 +183,8 @@ class Expression():
                 stack.append(eval('x %s y' % t))
             elif t in funclist:
                 x = stack.pop()
-                stack.append('%s(x)' %t) 
+                Node = funcuitvoer[t]
+                stack.append(Node(x))
             elif t =='~':
                 y = stack.pop()
                 stack.append(NegNode(y))
@@ -258,6 +246,7 @@ class Variable(Expression):
     #initialisatie
     def __init__(self,teken):
         self.teken = teken
+        self.precendence = 6
     
     #overloaden van de tostring functie
     def __str__(self):
@@ -317,17 +306,30 @@ class NegNode(Expression):
 
 class FunctionNode(Expression):
     
-    def __init__(self, invoer,functie):
+    def __init__(self, invoer ,functie):
         self.functie = functie
         self.invoer = invoer
+        self.operatie = self.operatie
+        # self.invoer = self.invoer
+        # print(type(self.invoer), type(self.functie))
     
     def __str__(self):
-        return "%s ( %s)" % (self.functie,self.invoer)
+        # return  "%s ($s)", self.op_symbol
+        return "%s (%s)" % (self.functie,self.invoer)
+    
+    def evaluate(self,variabelen={}):
+        if isinstance(self.invoer, Variable):
+            return self.functie + '(' + str(self.invoer) + ')'
+        else:
+            return self.operatie(self.invoer)
+        
 
 class SinNode(FunctionNode):
     
     def __init__(self, invoer):
-        super(SinNode,self).__init__(self,invoer,math.sin)
+        self.operatie =  math.sin
+        self.precendence = 10
+        super(SinNode,self).__init__(invoer, 'sin')
 
     
 
@@ -549,10 +551,6 @@ class BinaryNode(Expression):
 class AddNode(BinaryNode):
     """Represents the addition operator"""
     
-    
-    # order = [1, True]
-
-
     def __init__(self, lhs, rhs):
         self.precendence = 1
         self.associatief = True
