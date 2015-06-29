@@ -238,6 +238,17 @@ class Constant(Expression):
     
     def numIntegrate(self,variabele,interval):
         return (self.value *(interval[1] -interval[0]))
+    
+    # waarde teruggeven bij differentiatie
+    # Als leaf is aangeroepen, dan moet de afgeleide van een niet binary worden
+    # bepaald. Dan moet direct de afgeleide worden gegeven
+    def dif(self,leaf=True):
+        if leaf:
+            return Constant(0)
+        else:
+            return self    
+            
+            
         
         
 #hier defineren we de variabelen        
@@ -263,6 +274,15 @@ class Variable(Expression):
     def evaluate(self,variabelen ={}):
         if self.teken in variabelen:
             return Constant(variabelen[self.teken])
+        else:
+            return self
+    
+    # waarde teruggeven bij differentiatie
+    # Als leaf is aangeroepen, dan moet de afgeleide van een niet binary worden
+    # bepaald. Dan moet direct de afgeleide worden gegeven
+    def dif(self, leaf=True):
+        if leaf:
+            return Constant(1)
         else:
             return self
             
@@ -422,26 +442,128 @@ class BinaryNode(Expression):
 
     #Evaluatie functie
     def evaluate(self, variabelen={}):
-
+        
         #bepaal de waarden van lhs en de rhs, neem daarin de ingevulde variable waarden mee
         getal1 = self.lhs.evaluate(variabelen)
         getal2 = self.rhs.evaluate(variabelen)
+        this_symbol = self.op_symbol
+        this_order = self.precendence
+
+        #Controleren op en verwijderen van nullen in verschillende vormen, en 
+        #gevallen iets * 1 -> iets
+        welke = 1
+
+        for getal in [getal1, getal2]:
+            
+            #Verwijderen van nullen
+            if getal == Constant(0):
+                if this_order==1:
+                    return eval("getal" + str(welke%2 + 1))
+                elif this_symbol == '*':
+                    return Constant(0)
+                elif this_symbol == '/':
+                    if welke == 1:
+                        return Constant(0)
+                elif this_symbol == '**':
+                    if welke == 1:
+                        return Constant(0)
+                    else:
+                        return Constant(1)
+            
+            #verwijderen van enen
+            elif getal == Constant(1):
+                if this_symbol == '*':
+                    return eval("getal" + str(welke%2 + 1))
+                elif this_symbol == '/':
+                    if welke == 2:
+                        return getal
+                elif this_symbol == '**':
+                    if welke == 1:
+                        return Constant(1)
+                    else:
+                        return getal1
+            
+            #volgende zijde
+            welke = welke + 1
+
         #Als een van de twee géén constante is, dan is 1 van de twee ofwel een variabele, ofwel
         #een compound expressie met een variabele er in. Dit kan dan niet als getal geevalueerd worden
         if not isinstance(getal1,Constant):
-            return BinaryNode(getal1,getal2,self.op_symbol)
+            return BinaryNode(getal1,getal2,this_symbol)
         elif not isinstance(getal2,Constant):
-            return BinaryNode(getal1,getal2,self.op_symbol)
+            return BinaryNode(getal1,getal2,this_symbol)
             
         #Wel twee constanten? Voer de operatie uit en maak een nieuwe constante aan
         else:
-            # print('%s %s %s' % (getal1.constantvalue(), self.op_symbol, getal2.constantvalue()))
-            ans = Constant(eval('%s %s %s' % (getal1.constantvalue(), self.op_symbol, getal2.constantvalue())))
-            
-            return ans
+            return Constant(eval('%s %s %s' % (getal1.constantvalue(), self.op_symbol, getal2.constantvalue())))
         
-    
-    
+        #Differentiatie
+    def dif(self, leaf=False):
+        
+        order_this = self.precendence
+        
+        #Kettingregel
+        if (self.op_symbol == '**' and not (isinstance(self.lhs,Constant) or isinstance(self.lhs,Variable))):
+            macht = BinaryNode(self.lhs,Constant(self.rhs.constantvalue() - 1),'**')
+            product = BinaryNode(self.rhs,macht,'*')
+            left = self.lhs.dif()
+            toreturn = BinaryNode(product,left,'*')
+            
+        #Productregel
+        elif (self.op_symbol == '*' and not (isinstance(self.lhs,Constant) or isinstance(self.rhs,Constant))):
+            afgeleide1 = self.lhs.dif(True)
+            afgeleide2 = self.rhs.dif(True)
+            product1 = BinaryNode(afgeleide1,self.rhs,'*')
+            product2 = BinaryNode(self.lhs,afgeleide2,'*')
+            toreturn = BinaryNode(product1,product2,'+')
+            
+        #Geen kettingregel of productregel
+        else:
+            left = self.lhs.dif(False)
+            right = self.rhs.dif(False)
+            order_this = self.precendence
+            toreturn = False   
+
+        #print(self)
+
+        # Nu volgt het afleiden van simpele polynomiale expressies
+        # Voor de lhs geldt:
+        if type(toreturn) == bool:
+            if isinstance(left,Constant):
+                if order_this == 1:
+                    left = Constant(0)
+                elif order_this == 2 and isinstance(right,Constant): 
+                    toreturn = Constant(0)
+                #elif right is variabele of binarynode, dan niet veranderen    
+                elif order_this == 3:
+                    #we staan geen 2^x toe op dit moment, dus is het een getal
+                    toreturn = Constant(0) 
+            elif isinstance(left,Variable):
+                if order_this == 1 or order_this == 2:
+                    #we staan nog geen productregel toe, dus rechts is een constante
+                    left = Constant(1)
+                else: #orderthis == 3
+                    macht = BinaryNode(left,Constant(right.constantvalue() - 1),'**')
+                    toreturn = BinaryNode(right,macht,'*')
+
+        # Voor de rhs geldt:
+        if type(toreturn) == bool:
+            if isinstance(right,Constant):
+                if order_this == 1:
+                    right = Constant(0)
+                #elif order_this == 3 of 2: dit is al gereturned of hoeft niet veranderd
+            elif isinstance(right,Variable):
+                if order_this == 1 or order_this == 2:
+                    right = Constant(1)
+                #else: #orderthis == 3 machtfunctie zijn nog niet toegestaan
+        
+        # Indien de toreturn niet al is gedefinieed
+        if type(toreturn) == bool:
+            toreturn = BinaryNode(left,right,self.op_symbol)
+        
+        # Eindresultaat teruggeven
+        return toreturn
+        
         
         
         
@@ -590,12 +712,3 @@ class PowNode(BinaryNode):
         self.precendence = 3
         self.associatief = False
         super(PowNode, self).__init__(lhs, rhs , '**',self.precendence,self.associatief)
-        
-
-
-        
-
-
-        
-
-     
