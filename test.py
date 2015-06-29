@@ -108,7 +108,6 @@ class Expression():
         i = 0 
         
         while i< len(tokens):
-                      
             # print(tokens[i])
             if isnumber(tokens[i]):
                 # numbers go directly to the output
@@ -162,7 +161,9 @@ class Expression():
                 
                 # pop the left paranthesis from the stack (but not to the output)
                 stack.pop()
-
+                if len(stack)> 0 and stack[-1] in funclist:
+                    output.append(stack.pop())
+                
             else:
                 output.append(Variable(tokens[i]))
             
@@ -245,6 +246,7 @@ class Variable(Expression):
     #initialisatie
     def __init__(self,teken):
         self.teken = teken
+        self.precendence = 6
     
     #overloaden van de tostring functie
     def __str__(self):
@@ -316,16 +318,18 @@ class FunctionNode(Expression):
         return "%s (%s)" % (self.functie,self.invoer)
     
     def evaluate(self,variabelen={}):
-        # return(10)
-        uitvoer = "math."+ self.functie
-        print(uitvoer)
-        return eval("%s (%s)" % (self.operatie, self.invoer))
+        self.invoer = self.invoer.evaluate(variabelen)
+        if isinstance(self.invoer, Variable):
+            return self.functie + '(' + str(self.invoer) + ')'
+        else:
+            return Constant(self.operatie(self.invoer))
         
 
 class SinNode(FunctionNode):
     
     def __init__(self, invoer):
         self.operatie =  math.sin
+        self.precendence = 10
         super(SinNode,self).__init__(invoer, 'sin')
 
     

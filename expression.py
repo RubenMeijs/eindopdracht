@@ -318,10 +318,14 @@ class FunctionNode(Expression):
         return "%s (%s)" % (self.functie,self.invoer)
     
     def evaluate(self,variabelen={}):
+        self.invoer = self.invoer.evaluate(variabelen)
         if isinstance(self.invoer, Variable):
-            return self.functie + '(' + str(self.invoer) + ')'
+            # return self (self.invoer)
+            """dit grapje met er ene variabele vn maken werkt, maar eigenlijk zou je gewoon een sinnode terug willen"""
+            return self
+            # return Variable(self.functie + '(' + str(self.invoer) + ')')
         else:
-            return self.operatie(self.invoer)
+            return Constant(self.operatie(self.invoer))
         
 
 class SinNode(FunctionNode):
@@ -338,14 +342,14 @@ class BinaryNode(Expression):
     
     #A node in the expression tree representing a binary operator.
     # order_op = {'+':[1,True],'-':[1,False], '*':[2,True], '/':[2,False],'**':[3,False],'~':[4,False]}
-
+    """ We moeten een standaard precendence en associatief mee geven """
     #initialisatie van BinaryNode
-    def __init__(self, lhs, rhs, op_symbol):
+    def __init__(self, lhs, rhs, op_symbol,precendence = 0,associatief= False):
         self.lhs = lhs
         self.rhs = rhs
         self.op_symbol = op_symbol
-        self.precendence = self.precendence
-        self.associatief = self.associatief
+        self.precendence = precendence
+        self.associatief = associatief
         
         # print(self.precendence , "precendence", op_symbol, self.associatief)
         
@@ -373,7 +377,6 @@ class BinaryNode(Expression):
             # is het een binarynode? bepaal de operatie orde een laag naar beneden en de huidige operatieorde
             # bepaal ook of de huidige operatie associatief is
             if isinstance(self,BinaryNode):
-                
                 order_lower = side.precendence
                 order_this = self.precendence
                 this_ass =  self.associatief
@@ -423,7 +426,6 @@ class BinaryNode(Expression):
         #bepaal de waarden van lhs en de rhs, neem daarin de ingevulde variable waarden mee
         getal1 = self.lhs.evaluate(variabelen)
         getal2 = self.rhs.evaluate(variabelen)
-
         #Als een van de twee géén constante is, dan is 1 van de twee ofwel een variabele, ofwel
         #een compound expressie met een variabele er in. Dit kan dan niet als getal geevalueerd worden
         if not isinstance(getal1,Constant):
@@ -554,7 +556,7 @@ class AddNode(BinaryNode):
     def __init__(self, lhs, rhs):
         self.precendence = 1
         self.associatief = True
-        super(AddNode, self).__init__(lhs, rhs, '+')
+        super(AddNode, self).__init__(lhs, rhs, '+',self.precendence,self.associatief)
 
 class SubNode(BinaryNode):
     """Represents the subtraction operator"""
@@ -562,7 +564,7 @@ class SubNode(BinaryNode):
     def __init__(self, lhs, rhs):
         self.precendence = 1
         self.associatief = False
-        super(SubNode, self).__init__(lhs, rhs , '-')
+        super(SubNode, self).__init__(lhs, rhs , '-',self.precendence,self.associatief)
         
 
 class DivNode(BinaryNode):
@@ -571,7 +573,7 @@ class DivNode(BinaryNode):
     def __init__(self, lhs, rhs):
         self.precendence = 2
         self.associatief = False
-        super(DivNode, self).__init__(lhs, rhs , '/')
+        super(DivNode, self).__init__(lhs, rhs , '/',self.precendence,self.associatief)
 
 class MulNode(BinaryNode):
     """Represents the multiplication operator"""
@@ -579,7 +581,7 @@ class MulNode(BinaryNode):
     def __init__(self, lhs, rhs):
         self.precendence = 2
         self.associatief = True
-        super(MulNode, self).__init__(lhs, rhs , '*')
+        super(MulNode, self).__init__(lhs, rhs , '*',self.precendence,self.associatief)
 
 class PowNode(BinaryNode):
     """Represents the power operator"""
@@ -587,7 +589,7 @@ class PowNode(BinaryNode):
     def __init__(self, lhs, rhs):
         self.precendence = 3
         self.associatief = False
-        super(PowNode, self).__init__(lhs, rhs , '**')
+        super(PowNode, self).__init__(lhs, rhs , '**',self.precendence,self.associatief)
         
 
 
