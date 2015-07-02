@@ -92,7 +92,20 @@ class Expression():
         funclist = ['sin', 'cos','exp']
         funcuitvoer  = { 'sin' : SinNode, 'cos' : CosNode , 'exp': ExpNode}
 
-        #order_op index 0 is order, index 1 is associativity (0=left, 1=right)
+        # order_op index 0 is order, index 1 is associativity (0=left, 1=right)
+        Nodes = [AddNode,SubNode,DivNode,MulNode,PowNode,NegNode]
+        order_op = {}
+        for node in Nodes:
+            if node == NegNode:
+                a = node(0)
+                order_op[a.op_symbol]=a.precedence
+            else:
+                a = node(0,0)
+                order_op[a.op_symbol]=a.precedence
+        
+        
+        # print(order_op)
+        
         order_op = {'+':[1,0],'-':[1,0], '*':[2,0], '/':[2,0],'**':[3,1],  '~':[3,1]}
         
         i = 0 
@@ -231,7 +244,7 @@ class Variable(Expression):
     #initialisatie
     def __init__(self,teken):
         self.teken = teken
-        self.precedence = 6
+        self.precedence = 10
     
     #overloaden van de tostring functie
     def __str__(self):
@@ -298,6 +311,7 @@ class FunctionNode(Expression):
         self.func_symbol = func_symbol
         self.invoer = invoer
         self.operatie = self.operatie
+        self.precendence = 10
 
     #De printfunctie. De invoer moet altijd om haakjes worden gezet.
     def __str__(self):
@@ -321,13 +335,12 @@ class SinNode(FunctionNode):
     #De operatie is sinus met een maximale precendence
     def __init__(self, invoer):
         self.operatie =  math.sin
-        self.precedence = 10
         self.invoer =invoer
         super(SinNode,self).__init__(invoer, 'sin')
     
     #Geef de afgeleide terug
     def dif(self,leaf=False):
-        return CosNode(self.invoer)*self.invoer.dif().evaluate()
+        return CosNode(self.invoer)*self.invoer.dif()
 
 # Een subclass van functionnode
 class CosNode(FunctionNode):
@@ -335,12 +348,11 @@ class CosNode(FunctionNode):
     #De operatie is cosinus met een maximale precendence
     def __init__(self, invoer):
         self.operatie =  math.cos
-        self.precedence = 10
         super(CosNode,self).__init__(invoer, 'cos')
     
     #Geef de afgeleide terug
     def dif(self,leaf=False):
-        return NegNode(SinNode(self.invoer))*self.invoer.dif().evaluate()    
+        return NegNode(SinNode(self.invoer))*self.invoer.dif()  
 
 # Een subclass van functionnode
 class ExpNode(FunctionNode):
@@ -348,24 +360,23 @@ class ExpNode(FunctionNode):
     #De operatie is exp met een maximale precendence
     def __init__(self, invoer):
         self.operatie =  math.exp
-        self.precedence = 10
         super(ExpNode,self).__init__(invoer, 'exp')
     
     #Geef de afgeleide terug
     def dif(self,leaf=False):
-        return ExpNode(self.invoer)*self.invoer.dif().evaluate()   
+        return ExpNode(self.invoer)*self.invoer.dif() 
     
 # De standaard node is een binarynode, hier zijn de meeste en meest uitgebreidde
 # functionaliteiten te vinden
 class BinaryNode(Expression):
     
     #A node in the expression tree representing a binary operator.
-    def __init__(self, lhs, rhs, op_symbol,precedence,associatief):
+    def __init__(self, lhs, rhs, op_symbol,precedence,commutatief):
         self.lhs = lhs
         self.rhs = rhs
         self.op_symbol = op_symbol
         self.precedence = precedence
-        self.associatief = associatief
+        self.commutatief = commutatief
 
     #overloarden bij een gelijk teken
     def __eq__(self, other):
@@ -385,16 +396,16 @@ class BinaryNode(Expression):
             
            
             # is het een binarynode? bepaal de operatie orde een laag naar beneden en de huidige operatieorde
-            # bepaal ook of de huidige operatie associatief is
+            # bepaal ook of de huidige operatie commutatief is
             if True:
                 # print(side,"zijde")
                 order_lower = side.precedence
                 order_this = self.precedence
-                this_ass =  self.associatief
+                this_ass =  self.commutatief
                 
                 
                 #indien ofwel orde 1 laag dieper minder groot is dan de huidige, dan zijn haakjes nodig
-                #haakjes zijn ook nodig als de huidige operatie niet associatief is 
+                #haakjes zijn ook nodig als de huidige operatie niet commutatief is 
                 if order_lower < order_this or (not this_ass and order_lower == order_this and zijde ==1):
                     
                     uitvoer = uitvoer + "(%s)" % (str(side))
@@ -467,9 +478,9 @@ class BinaryNode(Expression):
         #Als een van de twee géén constante is, dan is 1 van de twee ofwel een variabele, ofwel
         #een compound expressie met een variabele er in. Dit kan dan niet als getal geevalueerd worden
         if not isinstance(getal1,Constant):
-            return BinaryNode(getal1,getal2,this_symbol,self.precedence,self.associatief)
+            return BinaryNode(getal1,getal2,this_symbol,self.precedence,self.commutatief)
         elif not isinstance(getal2,Constant):
-            return BinaryNode(getal1,getal2,this_symbol,self.precedence,self.associatief)
+            return BinaryNode(getal1,getal2,this_symbol,self.precedence,self.commutatief)
             
         #Wel twee constanten? Voer de operatie uit en maak een nieuwe constante aan
         else:
@@ -483,19 +494,19 @@ class BinaryNode(Expression):
         #Kettingregel. De verschillende elementen worden los van elkaar aangemaakt. Dus eerst f(x) en x'
         # en dan het product
         if (self.op_symbol == '**' and not (isinstance(self.lhs,Constant) or isinstance(self.lhs,Variable))):
-            macht = BinaryNode(self.lhs,Constant(self.rhs.value - 1),'**',self.precedence,self.associatief)
-            product = BinaryNode(self.rhs,macht,'*', self.precedence,self.associatief)
+            macht = PowNode(self.lhs,Constant(self.rhs.value - 1))
+            product = MulNode(self.rhs,macht)
             left = self.lhs.dif()
-            toreturn = BinaryNode(product,left,'*', self.precedence,self.associatief)
+            toreturn = MulNode(product,left)
             
         #Productregel. Analoog aan kettingregel. Eerst f'(x) en g'(x). Dan f(x)g'(x) en f'(x)g(x) en dan 
         # de som
         elif (self.op_symbol == '*' and not (isinstance(self.lhs,Constant) or isinstance(self.rhs,Constant))):
             afgeleide1 = self.lhs.dif(True)
             afgeleide2 = self.rhs.dif(True)
-            product1 = BinaryNode(afgeleide1,self.rhs,'*', self.precedence,self.associatief)
-            product2 = BinaryNode(self.lhs,afgeleide2,'*', self.precedence,self.associatief)
-            toreturn = BinaryNode(product1,product2,'+', self.precedence,self.associatief)
+            product1 = MulNode(afgeleide1,self.rhs)
+            product2 = MulNode(self.lhs,afgeleide2)
+            toreturn = AddNode(product1,product2)
             
         #Geen kettingregel of productregel
         else:
@@ -521,9 +532,9 @@ class BinaryNode(Expression):
                     #we staan nog geen productregel toe, dus rechts is een constante
                     left = Constant(1)
                 else: #orderthis == 3
-                    macht = BinaryNode(left,Constant(right.value - 1),'**', self.precedence,self.associatief)
-                    toreturn = BinaryNode(right,macht,'*', self.precedence,self.associatief)
-
+                    macht = PowNode(left,Constant(right.value -1))
+                    toreturn = MulNode(right,macht)
+                    
         # Voor de rhs geldt:
         if type(toreturn) == bool:
             if isinstance(right,Constant):
@@ -537,7 +548,7 @@ class BinaryNode(Expression):
         
         # Indien de toreturn niet al is gedefinieed
         if type(toreturn) == bool:
-            toreturn = BinaryNode(left,right,self.op_symbol, self.precedence,self.associatief)
+            toreturn = BinaryNode(left,right,self.op_symbol, self.precedence,self.commutatief)
         # Eindresultaat teruggeven
         return toreturn
         
@@ -651,8 +662,9 @@ class AddNode(BinaryNode):
     
     def __init__(self, lhs, rhs):
         self.precedence = 1 #meegeven van de precendence en associativiteit
-        self.associatief = True
-        super(AddNode, self).__init__(lhs, rhs, '+',self.precedence,self.associatief)
+        self.commutatief = True
+        self.op_symbol = '+'
+        super(AddNode, self).__init__(lhs, rhs,self.op_symbol,self.precedence,self.commutatief)
 
 #onderstaande functies zijn extra maar analoog aan addnode
 class SubNode(BinaryNode):
@@ -660,8 +672,9 @@ class SubNode(BinaryNode):
 
     def __init__(self, lhs, rhs):
         self.precedence = 1
-        self.associatief = False
-        super(SubNode, self).__init__(lhs, rhs , '-',self.precedence,self.associatief)
+        self.commutatief = False
+        self.op_symbol = '-'
+        super(SubNode, self).__init__(lhs, rhs , self.op_symbol,self.precedence,self.commutatief)
         
 
 class DivNode(BinaryNode):
@@ -669,21 +682,24 @@ class DivNode(BinaryNode):
 
     def __init__(self, lhs, rhs):
         self.precedence = 2
-        self.associatief = False
-        super(DivNode, self).__init__(lhs, rhs , '/',self.precedence,self.associatief)
+        self.commutatief = False
+        self.op_symbol = '/'
+        super(DivNode, self).__init__(lhs, rhs , self.op_symbol,self.precedence,self.commutatief)
 
 class MulNode(BinaryNode):
     """Represents the multiplication operator"""
 
     def __init__(self, lhs, rhs):
         self.precedence = 2
-        self.associatief = True
-        super(MulNode, self).__init__(lhs, rhs , '*',self.precedence,self.associatief)
+        self.commutatief = True
+        self.op_symbol = '*'
+        super(MulNode, self).__init__(lhs, rhs ,self.op_symbol,self.precedence,self.commutatief)
 
 class PowNode(BinaryNode):
     """Represents the power operator"""
 
     def __init__(self, lhs, rhs):
         self.precedence = 3
-        self.associatief = False
-        super(PowNode, self).__init__(lhs, rhs , '**',self.precedence,self.associatief)
+        self.commutatief = False
+        self.op_symbol = '**'
+        super(PowNode, self).__init__(lhs, rhs , self.op_symbol,self.precedence,self.commutatief)
