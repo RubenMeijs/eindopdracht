@@ -76,8 +76,7 @@ class Expression():
     def __neg__(self):
         return NegNode(self)
     
-    def sin(self):
-        return SinNode('sin', self)
+    
 
     # basic Shunting-yard algorithm
     def fromString(self, string):
@@ -95,8 +94,8 @@ class Expression():
         # list of operators
 
         oplist = ['+','-', '*', '/','**']
-        funclist = ['sin']
-        funcuitvoer  = { 'sin' : SinNode}
+        funclist = ['sin', 'cos','exp']
+        funcuitvoer  = { 'sin' : SinNode, 'cos' : CosNode , 'exp': ExpNode}
         # order_op={'+':AddNode.order}
         
         # for i in oplist:
@@ -306,8 +305,9 @@ class NegNode(Expression):
         if isinstance(getal,Constant):
             return Constant(eval("%s %s %s" % (Constant(-1),'*',getal)))
         else:
-            return "- %s" % (getal)
-        
+            return self
+    
+       
         
         # #bepaal de waarden van lhs en de rhs, neem daarin de ingevulde variable waarden mee
         # getal1 = self.expressie.evaluate(variabelen)
@@ -339,7 +339,7 @@ class FunctionNode(Expression):
     
     def evaluate(self,variabelen={}):
         self.invoer = self.invoer.evaluate(variabelen)
-        if isinstance(self.invoer, Variable):
+        if not isinstance(self.invoer, Constant):
             # return self (self.invoer)
             """dit grapje met er ene variabele vn maken werkt, maar eigenlijk zou je gewoon een sinnode terug willen"""
             return self
@@ -353,10 +353,39 @@ class SinNode(FunctionNode):
     def __init__(self, invoer):
         self.operatie =  math.sin
         self.precendence = 10
+        self.invoer =invoer
         super(SinNode,self).__init__(invoer, 'sin')
+    
+    def dif(self,leaf=False):
+        return CosNode(self.invoer)*self.invoer.dif().evaluate()
 
+
+
+class CosNode(FunctionNode):
+    
+    def __init__(self, invoer):
+        self.operatie =  math.cos
+        self.precendence = 10
+        super(CosNode,self).__init__(invoer, 'cos')
+
+    def dif(self,leaf=False):
+        return Constant(-1)*SinNode(self.invoer)*self.invoer.dif().evaluate()    
+
+
+class ExpNode(FunctionNode):
+    
+    def __init__(self, invoer):
+        self.operatie =  math.exp
+        self.precendence = 10
+        super(ExpNode,self).__init__(invoer, 'exp')
+
+    def dif(self,leaf=False):
+        return ExpNode(self.invoer)*self.invoer.dif().evaluate()   
     
 
+
+    
+    
        
 class BinaryNode(Expression):
     
@@ -364,7 +393,10 @@ class BinaryNode(Expression):
     # order_op = {'+':[1,True],'-':[1,False], '*':[2,True], '/':[2,False],'**':[3,False],'~':[4,False]}
     """ We moeten een standaard precendence en associatief mee geven """
     #initialisatie van BinaryNode
-    def __init__(self, lhs, rhs, op_symbol,precendence = 0,associatief= False):
+    """BinaryNode moet ook een precendence krijgen omdat er niet altijd een precendence wordt mee gegeven, niet echt duidelijk wat de default waarde moet zijn. Bij 0 werkt het niet goed..."""
+    """ 1 werkt echter ook niet goed met haakjes weg werken. Hier even over nadenken hoe het precies zit. We moeten wss 
+     de precendence van alle objecten na lopen en er over nadenken wat de volgorde moet zijn"""
+    def __init__(self, lhs, rhs, op_symbol,precendence,associatief):
         self.lhs = lhs
         self.rhs = rhs
         self.op_symbol = op_symbol
@@ -388,27 +420,16 @@ class BinaryNode(Expression):
         zijde = 0 #administreer of we de linker of rechter zijde bekijken (0 = lhs)
         #ga beide kanten langs en ga na of deze kant haakjes nodig heeft
         
-        
-        
-        
         for side in [self.lhs, self.rhs]:
             
            
             # is het een binarynode? bepaal de operatie orde een laag naar beneden en de huidige operatieorde
             # bepaal ook of de huidige operatie associatief is
-            if isinstance(self,BinaryNode):
+            if True:
+                # print(side,"zijde")
                 order_lower = side.precendence
                 order_this = self.precendence
                 this_ass =  self.associatief
-                # print(order_lower)
-                # print(order_this)
-                # print(order_lower, order_this)
-                # if order_lower != 10:
-                    # print(side , "side",self.lhs,"self.lhs", self.rhs)
-                    # print(side.op_symbol)
-                    # print(self.op_symbol)
-                # print(order_this)    
-                    # print(uitvoer)
                 
                 
                 #indien ofwel orde 1 laag dieper minder groot is dan de huidige, dan zijn haakjes nodig
@@ -419,17 +440,6 @@ class BinaryNode(Expression):
                     
                 else:
                     uitvoer = uitvoer + str(side)
-            
-            
-                    
-            elif isinstance(self, NegNode):
-                print ("negnode")
-           
-            
-            
-            # geen binarynode? Dan kan tostring worden aangeroepen
-            
-                
             
             # als de huidige zijde de lhs is, dan moet het operatiesymbool worden toegevoegd    
             if zijde == 0:
@@ -454,7 +464,7 @@ class BinaryNode(Expression):
         welke = 1
 
         for getal in [getal1, getal2]:
-            
+           #print("getal1",getal1,"getal2",getal2,"getal",getal)
             #Verwijderen van nullen
             if getal == Constant(0):
                 if this_order==1:
@@ -473,10 +483,12 @@ class BinaryNode(Expression):
             #verwijderen van enen
             elif getal == Constant(1):
                 if this_symbol == '*':
+                    print(getal)
+                    print(eval("getal" + str(welke%2 + 1)))
                     return eval("getal" + str(welke%2 + 1))
                 elif this_symbol == '/':
                     if welke == 2:
-                        return getal
+                        return getal1
                 elif this_symbol == '**':
                     if welke == 1:
                         return Constant(1)
@@ -489,9 +501,9 @@ class BinaryNode(Expression):
         #Als een van de twee géén constante is, dan is 1 van de twee ofwel een variabele, ofwel
         #een compound expressie met een variabele er in. Dit kan dan niet als getal geevalueerd worden
         if not isinstance(getal1,Constant):
-            return BinaryNode(getal1,getal2,this_symbol)
+            return BinaryNode(getal1,getal2,this_symbol,self.precendence,self.associatief)
         elif not isinstance(getal2,Constant):
-            return BinaryNode(getal1,getal2,this_symbol)
+            return BinaryNode(getal1,getal2,this_symbol,self.precendence,self.associatief)
             
         #Wel twee constanten? Voer de operatie uit en maak een nieuwe constante aan
         else:
@@ -504,18 +516,18 @@ class BinaryNode(Expression):
         
         #Kettingregel
         if (self.op_symbol == '**' and not (isinstance(self.lhs,Constant) or isinstance(self.lhs,Variable))):
-            macht = BinaryNode(self.lhs,Constant(self.rhs.constantvalue() - 1),'**')
-            product = BinaryNode(self.rhs,macht,'*')
+            macht = BinaryNode(self.lhs,Constant(self.rhs.constantvalue() - 1),'**',self.precendence,self.associatief)
+            product = BinaryNode(self.rhs,macht,'*', self.precendence,self.associatief)
             left = self.lhs.dif()
-            toreturn = BinaryNode(product,left,'*')
+            toreturn = BinaryNode(product,left,'*', self.precendence,self.associatief)
             
         #Productregel
         elif (self.op_symbol == '*' and not (isinstance(self.lhs,Constant) or isinstance(self.rhs,Constant))):
             afgeleide1 = self.lhs.dif(True)
             afgeleide2 = self.rhs.dif(True)
-            product1 = BinaryNode(afgeleide1,self.rhs,'*')
-            product2 = BinaryNode(self.lhs,afgeleide2,'*')
-            toreturn = BinaryNode(product1,product2,'+')
+            product1 = BinaryNode(afgeleide1,self.rhs,'*', self.precendence,self.associatief)
+            product2 = BinaryNode(self.lhs,afgeleide2,'*', self.precendence,self.associatief)
+            toreturn = BinaryNode(product1,product2,'+', self.precendence,self.associatief)
             
         #Geen kettingregel of productregel
         else:
@@ -543,8 +555,8 @@ class BinaryNode(Expression):
                     #we staan nog geen productregel toe, dus rechts is een constante
                     left = Constant(1)
                 else: #orderthis == 3
-                    macht = BinaryNode(left,Constant(right.constantvalue() - 1),'**')
-                    toreturn = BinaryNode(right,macht,'*')
+                    macht = BinaryNode(left,Constant(right.constantvalue() - 1),'**', self.precendence,self.associatief)
+                    toreturn = BinaryNode(right,macht,'*', self.precendence,self.associatief)
 
         # Voor de rhs geldt:
         if type(toreturn) == bool:
@@ -559,8 +571,7 @@ class BinaryNode(Expression):
         
         # Indien de toreturn niet al is gedefinieed
         if type(toreturn) == bool:
-            toreturn = BinaryNode(left,right,self.op_symbol)
-        
+            toreturn = BinaryNode(left,right,self.op_symbol, self.precendence,self.associatief)
         # Eindresultaat teruggeven
         return toreturn
         
