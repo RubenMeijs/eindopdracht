@@ -571,72 +571,129 @@ class BinaryNode(Expression):
     
     #Numerieke integratie
     def numIntegrate(self,variables,intervals):
+        #voor 1 variabele
         if isinstance(variables,str):
+            #stapgrootte vastleggen voor 1 variabele
             steps_per_unit = 1000
             steps1 = (intervals[1]-intervals[0])*steps_per_unit
             begin1 = intervals[0]
             eind1 = intervals[1]
             ans = 0
             
+            #trapeziummethode toepassen op alle stapjes
+            for i in range(0,steps1):
+                x = [begin1+(i*(eind1-begin1))/steps1, begin1+((i+1)*(eind1-begin1))/steps1]
+                for xpunt in x:
+                    f = self.evaluate({variables:xpunt})
+                    ans += (1/2)*eval('%s' % f)/steps_per_unit
+            
+            return round(ans,3)
+        
+        #voor 1 variabele voor het geval dat deze in een lijst staat
+        elif (isinstance(variables,list) and len(variables)==1):
+            #stapgrootte vastleggen voor 1 variabele
+            steps_per_unit = 1000
+            steps1 = (intervals[0][1]-intervals[0][0])*steps_per_unit
+            begin1 = intervals[0][0]
+            eind1 = intervals[0][1]
+            ans = 0
+            
+            #trapeziummethode toepassen op alle stapjes
             for i in range(0,steps1):
                 x = [begin1+(i*(eind1-begin1))/steps1, begin1+((i+1)*(eind1-begin1))/steps1]
                 for xpunt in x:
                     f = self.evaluate({variables[0]:xpunt})
                     ans += (1/2)*eval('%s' % f)/steps_per_unit
+            
+            return round(ans,3)
         
-        elif len(variables)==2:
-            steps_per_unit = 100
+        #voor meerdere variabelen
+        else:
+            #testen of er een of meerdere getallen in intervals zitten
+            test = []
+            for i in intervals:
+                test.append(isinstance(i,list))
+            if all(test)==False:
+                newfunction = self
+                newvariables = variables
+                newintervals = intervals
+                correction = 0
+                number = 0
+                #nieuwe functie, variabelen en intervallen maken
+                for j in intervals:
+                    if (isinstance(j,int) or isinstance(j,float)):
+                        newfunction = newfunction.evaluate({variables[number]:j})
+                        newvariables.pop(number)
+                        newintervals.pop(number)
+                        correction += 1
+                    number += 1
+                #de functie numIntegrate opnieuw runnen voor de nieuwe functie
+                return newfunction.numIntegrate(newvariables,newintervals)
             
-            steps1 = (intervals[0][1]-intervals[0][0])*steps_per_unit
-            begin1 = intervals[0][0]
-            eind1 = intervals[0][1]
-            
-            steps2 = (intervals[1][1]-intervals[1][0])*steps_per_unit
-            begin2 = intervals[1][0]
-            eind2 = intervals[1][1]
-            
-            ans = 0
-            for i in range(0,steps1):
-                for j in range(0,steps2):
-                    x = [begin1+(i*(eind1-begin1))/steps1, begin1+((i+1)*(eind1-begin1))/steps1]
-                    y = [begin2+(j*(eind2-begin2))/steps2, begin2+((j+1)*(eind2-begin2))/steps2]
-                    for xpunt in x:
-                        for ypunt in y:
-                            f = self.evaluate({variables[0]:xpunt,variables[1]:ypunt})
-                            ans += (1/4)*eval('%s' % f)/(steps_per_unit**2)
-        
-        elif len(variables)==3:
-            steps_per_unit = 10
-            
-            steps1 = (intervals[0][1]-intervals[0][0])*steps_per_unit
-            begin1 = intervals[0][0]
-            eind1 = intervals[0][1]
-            
-            steps2 = (intervals[1][1]-intervals[1][0])*steps_per_unit
-            begin2 = intervals[1][0]
-            eind2 = intervals[1][1]
-            
-            steps3 = (intervals[2][1]-intervals[2][0])*steps_per_unit
-            begin3 = intervals[2][0]
-            eind3 = intervals[2][1]
-            
-            ans = 0
-            for i in range(0,steps1):
-                for j in range(0,steps2):
-                    for k in range(0,steps3):
-                        x = [begin1+(i*(eind1-begin1))/steps1, begin1+((i+1)*(eind1-begin1))/steps1]
-                        y = [begin2+(j*(eind2-begin2))/steps2, begin2+((j+1)*(eind2-begin2))/steps2]
-                        z = [begin3+(k*(eind3-begin3))/steps3, begin3+((k+1)*(eind3-begin3))/steps3]
-                        for xpunt in x:
-                            for ypunt in y:
-                                for zpunt in z:
-                                    f = self.evaluate({variables[0]:xpunt,variables[1]:ypunt,variables[2]:zpunt})
-                                    ans += (1/8)*eval('%s' % f)/(steps_per_unit**3)
-        
-        return round(ans,3)
+            #integratie starten voor meerdere variabelen
+            else:
+                #integratie voor twee variabelen
+                if len(variables)==2:
+                    #stapgrootte vastleggen voor 2 variabele
+                    steps_per_unit = 100
+                    
+                    steps1 = (intervals[0][1]-intervals[0][0])*steps_per_unit
+                    begin1 = intervals[0][0]
+                    eind1 = intervals[0][1]
+                    
+                    steps2 = (intervals[1][1]-intervals[1][0])*steps_per_unit
+                    begin2 = intervals[1][0]
+                    eind2 = intervals[1][1]
+                    
+                    ans = 0
+                    #trapeziummethode toepassen op alle stapjes
+                    for i in range(0,steps1):
+                        for j in range(0,steps2):
+                            x = [begin1+(i*(eind1-begin1))/steps1, begin1+((i+1)*(eind1-begin1))/steps1]
+                            y = [begin2+(j*(eind2-begin2))/steps2, begin2+((j+1)*(eind2-begin2))/steps2]
+                            for xpunt in x:
+                                for ypunt in y:
+                                    f = self.evaluate({variables[0]:xpunt,variables[1]:ypunt})
+                                    ans += (1/4)*eval('%s' % f)/(steps_per_unit**2)
+                    
+                    return round(ans,3)
+                
+                #integratie voor drie variabelen
+                elif len(variables)==3:
+                    #stapgrootte vastleggen voor 3 variabele
+                    steps_per_unit = 10
+                    
+                    steps1 = (intervals[0][1]-intervals[0][0])*steps_per_unit
+                    begin1 = intervals[0][0]
+                    eind1 = intervals[0][1]
+                    
+                    steps2 = (intervals[1][1]-intervals[1][0])*steps_per_unit
+                    begin2 = intervals[1][0]
+                    eind2 = intervals[1][1]
+                    
+                    steps3 = (intervals[2][1]-intervals[2][0])*steps_per_unit
+                    begin3 = intervals[2][0]
+                    eind3 = intervals[2][1]
+                    
+                    ans = 0
+                    #trapeziummethode toepassen op alle stapjes
+                    for i in range(0,steps1):
+                        for j in range(0,steps2):
+                            for k in range(0,steps3):
+                                x = [begin1+(i*(eind1-begin1))/steps1, begin1+((i+1)*(eind1-begin1))/steps1]
+                                y = [begin2+(j*(eind2-begin2))/steps2, begin2+((j+1)*(eind2-begin2))/steps2]
+                                z = [begin3+(k*(eind3-begin3))/steps3, begin3+((k+1)*(eind3-begin3))/steps3]
+                                for xpunt in x:
+                                    for ypunt in y:
+                                        for zpunt in z:
+                                            f = self.evaluate({variables[0]:xpunt,variables[1]:ypunt,variables[2]:zpunt})
+                                            ans += (1/8)*eval('%s' % f)/(steps_per_unit**3)
+                    
+                    return round(ans,3)
     
     #Nulpunt vinden op gespecificeerd interval
     def findRoot(self,expression,variable,interval):
+        #zorgen dat de functie altijd stijgt bekeken van a naar b
         if expression.evaluate({variable:interval[0]}).constantvalue()<expression.evaluate({variable:interval[1]}).constantvalue():
             a = interval[0]
             b = interval[1]
@@ -644,12 +701,17 @@ class BinaryNode(Expression):
             a = interval[1]
             b = interval[0]
         
+        #middelpunt definieren
         m = (a+b)/2
+        #definieren hoe precies het nulpunt moet worden gevonden
         delta = 0.0001
         
+        #m als output geven indien het interval te klein is geworden
         if abs(b-a)<=delta:
             return m
         
+        #bekijken aan welke kant van het middelpunt het nulpunt ligt
+        #de functie findRoot opnieuw runnen voor een half zo groot interval
         if expression.evaluate({variable:m}).constantvalue()<=0:
             newinterval = [m,b]
             return self.findRoot(expression,variable,newinterval)
@@ -659,10 +721,13 @@ class BinaryNode(Expression):
     
     #Numeriek vergelijkingen oplossen
     def numSolver(self,left,right,variable,interval):
+        #definieren hoe precies nulpunten van elkaar onderscheiden moeten worden
         epsilon = 0.01
         solutions = []
-        nulexpression = BinaryNode(left, right, '-')
+        #een kant van de vergelijking gelijk stellen aan nul
+        nulexpression = SubNode(left, right)
         i = interval[0]
+        #findRoot toepassen op alle intervallen die een nulpunt moeten bevatten
         while i+epsilon<=interval[1]:
             if (nulexpression.evaluate({variable:i}).constantvalue()<=0 and nulexpression.evaluate({variable:i+epsilon}).constantvalue()>=0) or (nulexpression.evaluate({variable:i}).constantvalue()>=0 and nulexpression.evaluate({variable:i+epsilon}).constantvalue()<=0):
                 nul = self.findRoot(nulexpression,variable,[i,i+epsilon])
