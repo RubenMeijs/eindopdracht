@@ -102,7 +102,7 @@ class Expression():
         #     order_op[t] = t.order
         # print(precendence)
         #order_op index 0 is order, index 1 is associativity (0=left, 1=right)
-        order_op = {'+':[1,0],'-':[1,0], '*':[2,0], '/':[2,0],'**':[3,1],  '~':[5,1]}
+        order_op = {'+':[1,0],'-':[1,0], '*':[2,0], '/':[2,0],'**':[3,1],  '~':[3,1]}
         
         i = 0 
         
@@ -127,14 +127,12 @@ class Expression():
                 if tokens[i] == '-' and (
                     tokens[i-1] in oplist + ['('] or len(output)==0):  
                     stack.append('~')    
+                
                      
                 else:  
                     while True:
                         if len(stack) == 0 or stack[-1] not in oplist+['~']:
                             break
-                        
-                        elif stack[-1] == '~':
-                            output.append(stack.pop())
                         
                         # Shunting Yard algoritme
                         elif (order_op[tokens[i]][1]==0 and order_op[tokens[i]][0] <= order_op[stack[-1]][0]
@@ -290,9 +288,7 @@ class NegNode(Expression):
     def __init__(self, expressie):
         self.expressie = expressie
         self.op_symbol = '~'
-        self.precendence = 2
-      
-
+        self.precendence = 3
 
     def __str__(self):
         if self.expressie.precendence < self.precendence:
@@ -305,10 +301,12 @@ class NegNode(Expression):
         if isinstance(getal,Constant):
             return Constant(eval("%s %s %s" % (Constant(-1),'*',getal)))
         else:
-            return self
+            return self.expressie.evaluate()
+
+    def dif(self,leaf=False):
+        return NegNode(self.expressie.dif())
     
-       
-        
+            
         # #bepaal de waarden van lhs en de rhs, neem daarin de ingevulde variable waarden mee
         # getal1 = self.expressie.evaluate(variabelen)
         # print(getal1)
@@ -360,7 +358,6 @@ class SinNode(FunctionNode):
         return CosNode(self.invoer)*self.invoer.dif().evaluate()
 
 
-
 class CosNode(FunctionNode):
     
     def __init__(self, invoer):
@@ -369,7 +366,7 @@ class CosNode(FunctionNode):
         super(CosNode,self).__init__(invoer, 'cos')
 
     def dif(self,leaf=False):
-        return Constant(-1)*SinNode(self.invoer)*self.invoer.dif().evaluate()    
+        return NegNode(SinNode(self.invoer))*self.invoer.dif().evaluate()    
 
 
 class ExpNode(FunctionNode):
@@ -383,10 +380,6 @@ class ExpNode(FunctionNode):
         return ExpNode(self.invoer)*self.invoer.dif().evaluate()   
     
 
-
-    
-    
-       
 class BinaryNode(Expression):
     
     #A node in the expression tree representing a binary operator.
@@ -483,8 +476,6 @@ class BinaryNode(Expression):
             #verwijderen van enen
             elif getal == Constant(1):
                 if this_symbol == '*':
-                    print(getal)
-                    print(eval("getal" + str(welke%2 + 1)))
                     return eval("getal" + str(welke%2 + 1))
                 elif this_symbol == '/':
                     if welke == 2:
@@ -509,7 +500,7 @@ class BinaryNode(Expression):
         else:
             return Constant(eval('%s %s %s' % (getal1.constantvalue(), self.op_symbol, getal2.constantvalue())))
         
-        #Differentiatie
+    #Differentiatie
     def dif(self, leaf=False):
         
         order_this = self.precendence
@@ -535,8 +526,6 @@ class BinaryNode(Expression):
             right = self.rhs.dif(False)
             order_this = self.precendence
             toreturn = False   
-
-        #print(self)
 
         # Nu volgt het afleiden van simpele polynomiale expressies
         # Voor de lhs geldt:
@@ -576,9 +565,6 @@ class BinaryNode(Expression):
         return toreturn
         
         
-        
-        
-
     
     #Numerieke integratie
     def numIntegrate(self,variables,intervals):
