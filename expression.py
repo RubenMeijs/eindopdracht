@@ -3,6 +3,7 @@ import sys
 import itertools
 import copy
 
+
 def tokenize(string):
     #split a string into mathematical tokens
     #returns a list of numbers, operators, parantheses and commas
@@ -94,6 +95,7 @@ class Expression():
 
         # order_op index 0 is order, index 1 is associativity (0=left, 1=right)
         Nodes = [AddNode,SubNode,DivNode,MulNode,PowNode,NegNode]
+        
         order_op = {}
         for node in Nodes:
             if node == NegNode:
@@ -311,7 +313,6 @@ class FunctionNode(Expression):
         self.func_symbol = func_symbol
         self.invoer = invoer
         self.operatie = self.operatie
-        self.precendence = 10
 
     #De printfunctie. De invoer moet altijd om haakjes worden gezet.
     def __str__(self):
@@ -335,7 +336,7 @@ class SinNode(FunctionNode):
     #De operatie is sinus met een maximale precendence
     def __init__(self, invoer):
         self.operatie =  math.sin
-        self.invoer =invoer
+        self.precendence = 10
         super(SinNode,self).__init__(invoer, 'sin')
     
     #Geef de afgeleide terug
@@ -348,6 +349,7 @@ class CosNode(FunctionNode):
     #De operatie is cosinus met een maximale precendence
     def __init__(self, invoer):
         self.operatie =  math.cos
+        self.precendence = 10
         super(CosNode,self).__init__(invoer, 'cos')
     
     #Geef de afgeleide terug
@@ -360,6 +362,7 @@ class ExpNode(FunctionNode):
     #De operatie is exp met een maximale precendence
     def __init__(self, invoer):
         self.operatie =  math.exp
+        self.precendence = 10
         super(ExpNode,self).__init__(invoer, 'exp')
     
     #Geef de afgeleide terug
@@ -665,11 +668,12 @@ class AddNode(BinaryNode):
         self.commutatief = True
         self.op_symbol = '+'
         super(AddNode, self).__init__(lhs, rhs,self.op_symbol,self.precedence,self.commutatief)
-
+    
+    
 #onderstaande functies zijn extra maar analoog aan addnode
 class SubNode(BinaryNode):
     """Represents the subtraction operator"""
-
+    
     def __init__(self, lhs, rhs):
         self.precedence = 1
         self.commutatief = False
@@ -679,7 +683,7 @@ class SubNode(BinaryNode):
 
 class DivNode(BinaryNode):
     """Represents the division operator"""
-
+    
     def __init__(self, lhs, rhs):
         self.precedence = 2
         self.commutatief = False
@@ -697,7 +701,7 @@ class MulNode(BinaryNode):
 
 class PowNode(BinaryNode):
     """Represents the power operator"""
-
+    
     def __init__(self, lhs, rhs):
         self.precedence = 3
         self.commutatief = False
