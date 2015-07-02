@@ -1,6 +1,8 @@
 import math
 import sys
 import itertools
+import copy
+
 
 def tokenize(string):
     #split a string into mathematical tokens
@@ -27,9 +29,6 @@ def tokenize(string):
             ans[-1] = '**'
         else:
             ans.append(t)
-    
-    
-    
             
     return ans
 # check if a string represents a numeric value
@@ -49,12 +48,11 @@ def isint(string):
         return False
 
 class Expression():
-    """A mathematical expression, represented as an expression tree
+    #A mathematical expression, represented as an expression tree
     
-    Any concrete subclass of Expression should have these methods:
-     - __str__(): return a string representation of the Expression.
-     - __eq__(other): tree-equality, check if other represents the same expression tree.
-    """
+    #Any concrete subclass of Expression should have these methods:
+    # - __str__(): return a string representation of the Expression.
+    # - __eq__(other): tree-equality, check if other represents the same expression tree.
 
     # operator overloading:
     # this allows us to perform 'arithmetic' with expressions, and obtain another expression
@@ -75,9 +73,6 @@ class Expression():
     
     def __neg__(self):
         return NegNode(self)
-    
-    def sin(self):
-        return SinNode('sin', self)
 
     # basic Shunting-yard algorithm
     def fromString(self, string):
@@ -95,20 +90,29 @@ class Expression():
         # list of operators
 
         oplist = ['+','-', '*', '/','**']
-        funclist = ['sin']
-        funcuitvoer  = { 'sin' : SinNode}
-        # order_op={'+':AddNode.order}
+        funclist = ['sin', 'cos','exp']
+        funcuitvoer  = { 'sin' : SinNode, 'cos' : CosNode , 'exp': ExpNode}
+
+        # order_op index 0 is order, index 1 is associativity (0=left, 1=right)
+        Nodes = [AddNode,SubNode,DivNode,MulNode,PowNode,NegNode]
         
-        # for i in oplist:
-        #     order_op[t] = t.order
-        # print(precendence)
-        #order_op index 0 is order, index 1 is associativity (0=left, 1=right)
-        order_op = {'+':[1,0],'-':[1,0], '*':[2,0], '/':[2,0],'**':[3,1],  '~':[5,1]}
+        order_op = {}
+        for node in Nodes:
+            if node == NegNode:
+                a = node(0)
+                order_op[a.op_symbol]=a.precedence
+            else:
+                a = node(0,0)
+                order_op[a.op_symbol]=a.precedence
+        
+        
+        # print(order_op)
+        
+        order_op = {'+':[1,0],'-':[1,0], '*':[2,0], '/':[2,0],'**':[3,1],  '~':[3,1]}
         
         i = 0 
         
         while i< len(tokens):
-            # print(tokens[i])
             if isnumber(tokens[i]):
                 # numbers go directly to the output
                 if isint(tokens[i]):
@@ -117,25 +121,18 @@ class Expression():
                     output.append(Constant(float(tokens[i])))
                     
             elif tokens[i] in funclist:
-                """ Binnen haakjes moet gezien owrden als de invoer van een functie"""
+                #Binnen haakjes moet gezien owrden als de invoer van een functie
                 stack.append(tokens[i])
                 
                     
             elif tokens[i] in oplist:
-                
-                # print(tokens[i], 'output[-1]=', output[-1])
-                
                 if tokens[i] == '-' and (
                     tokens[i-1] in oplist + ['('] or len(output)==0):  
                     stack.append('~')    
-                     
                 else:  
                     while True:
                         if len(stack) == 0 or stack[-1] not in oplist+['~']:
                             break
-                        
-                        elif stack[-1] == '~':
-                            output.append(stack.pop())
                         
                         # Shunting Yard algoritme
                         elif (order_op[tokens[i]][1]==0 and order_op[tokens[i]][0] <= order_op[stack[-1]][0]
@@ -144,12 +141,9 @@ class Expression():
                             output.append(stack.pop())
                         else:
                             break
-                        
                     stack.append(tokens[i])
                    
-            
-                
-                
+
             elif tokens[i] == '(':
                 # left parantheses go to the stack
                 stack.append(tokens[i])
@@ -191,7 +185,6 @@ class Expression():
             # elif t in neglist and stack[-1] in oplist:
                     
             else:
-                
                 # a constant, push it to the stack
                 stack.append(t)
             
@@ -200,15 +193,13 @@ class Expression():
         return stack[0]
 
 
-
 # Storing constant values  
 class Constant(Expression):
-    """Represents a constant value"""
+    #Represents a constant value
     def __init__(self, value):
         self.value = value
-        self.precendence =10
-        self.op_symbol = "COnstant"
-    
+        self.precedence =10
+
     # Overload of equality sign   
     def __eq__(self, other):
         if isinstance(other, Constant):
@@ -238,7 +229,16 @@ class Constant(Expression):
     
     def numIntegrate(self,variabele,interval):
         return (self.value *(interval[1] -interval[0]))
-        
+    
+    # waarde teruggeven bij differentiatie
+    # Als leaf True is, dan moet onmiddelijk de afgeleide worden teruggegeven
+    # Als leaf false is, dan geeft hij de waarde terug en wordt hoger 
+    # in de boom bepaald wat er mee moet gebeuren
+    def dif(self,leaf=True):
+        if leaf:
+            return Constant(0)
+        else:
+            return self    
         
 #hier defineren we de variabelen        
 class Variable(Expression):
@@ -246,7 +246,7 @@ class Variable(Expression):
     #initialisatie
     def __init__(self,teken):
         self.teken = teken
-        self.precendence = 6
+        self.precedence = 10
     
     #overloaden van de tostring functie
     def __str__(self):
@@ -265,92 +265,122 @@ class Variable(Expression):
             return Constant(variabelen[self.teken])
         else:
             return self
+    
+    # waarde teruggeven bij differentiatie
+    # Als leaf is aangeroepen, dan moet de afgeleide van een niet binary worden
+    # bepaald. Dan moet direct de afgeleide worden gegeven
+    def dif(self, leaf=True):
+        if leaf:
+            return Constant(1)
+        else:
+            return self
             
 class NegNode(Expression):
     
-    def __init__(self, expressie):
-        self.expressie = expressie
+    #initialisatie van de negnode. De inwendige invoer wordt meegegeven, het teken en de precedence
+    def __init__(self, invoer):
+        self.invoer = invoer
         self.op_symbol = '~'
-        self.precendence = 2
-      
+        self.precedence = 3
 
-
+    #printen. Indien de precedence van de invoer lager is, dan zijn er haakjes nodig
     def __str__(self):
-        if self.expressie.precendence < self.precendence:
-            return "- (%s)" % (self.expressie)
+        if self.invoer.precedence < self.precedence:
+            return "- (%s)" % (self.invoer)
         else:
-            return "- %s" % (self.expressie)
+            return "- %s" % (self.invoer)
 
+    #Evaluatie. Wanneer de invoer een constante is, maak dan een nieuwe constante aan
+    #Wanneer de invoer iets anders is, dan moet er een nieuwe 
     def evaluate(self,variabelen={}):
-        getal = self.expressie.evaluate(variabelen)
+        getal = self.invoer.evaluate(variabelen)
         if isinstance(getal,Constant):
-            return Constant(eval("%s %s %s" % (Constant(-1),'*',getal)))
+            return Constant(-getal.value)
+                #eval("%s %s %s" % (Constant(-1),'*',getal)))
         else:
-            return "- %s" % (getal)
-        
-        
-        # #bepaal de waarden van lhs en de rhs, neem daarin de ingevulde variable waarden mee
-        # getal1 = self.expressie.evaluate(variabelen)
-        # print(getal1)
+            return NegNode(self.invoer.evaluate())
+    
+    #Differentiatie betekent dat differentiatie van expression node moet worden teruggegeven
+    def dif(self,leaf=False):
+        return NegNode(self.invoer.dif())
+    
 
-        # #Als een van de twee géén constante is, dan is 1 van de twee ofwel een variabele, ofwel
-        # #een compound expressie met een variabele er in. Dit kan dan niet als getal geevalueerd worden
-        # if not isinstance(getal1,Constant):
-        #     return UnairyNode(getal1,self.op_symbol)
-        
-        # #Wel twee constanten? Voer de operatie uit en maak een nieuwe constante aan
-        # else:
-
-        #     return Constant(eval('%s %s' % (self.op_symbol, getal1.constantvalue())))
-            
-
+# Super classen van de functies exp, sin, cos 
 class FunctionNode(Expression):
     
-    def __init__(self, invoer ,functie):
-        self.functie = functie
+    #Elke functie moet meekrijgen het type functie, de invoer en de operatie
+    def __init__(self, invoer ,func_symbol):
+        self.func_symbol = func_symbol
         self.invoer = invoer
         self.operatie = self.operatie
-        # self.invoer = self.invoer
-        # print(type(self.invoer), type(self.functie))
-    
-    def __str__(self):
-        # return  "%s ($s)", self.op_symbol
-        return "%s (%s)" % (self.functie,self.invoer)
-    
-    def evaluate(self,variabelen={}):
-        self.invoer = self.invoer.evaluate(variabelen)
-        if isinstance(self.invoer, Variable):
-            return self.functie + '(' + str(self.invoer) + ')'
-        else:
-            return Constant(self.operatie(self.invoer))
-        
 
+    #De printfunctie. De invoer moet altijd om haakjes worden gezet.
+    def __str__(self):
+        return "%s (%s)" % (self.func_symbol,self.invoer)
+    
+    #Eerste wordt invoer geevalueerd. Als dit geen getal oplevert dan moet 
+    #dit geevalueerd worden als een getal. Als iets anders oplevert moet de ver
+    #eenvoudigde invoer worden teruggegeven. 
+    def evaluate(self,variabelen={}):
+        evaluated = self.invoer.evaluate(variabelen)
+        if not isinstance(evaluated, Constant):
+            toreturn = copy.copy(self)
+            toreturn.invoer = evaluated
+            return self
+        else:
+            return self.operatie(evaluated)
+        
+# Een subclass van functionnode
 class SinNode(FunctionNode):
     
+    #De operatie is sinus met een maximale precendence
     def __init__(self, invoer):
         self.operatie =  math.sin
         self.precendence = 10
         super(SinNode,self).__init__(invoer, 'sin')
-
     
+    #Geef de afgeleide terug
+    def dif(self,leaf=False):
+        return CosNode(self.invoer)*self.invoer.dif()
 
-       
+# Een subclass van functionnode
+class CosNode(FunctionNode):
+    
+    #De operatie is cosinus met een maximale precendence
+    def __init__(self, invoer):
+        self.operatie =  math.cos
+        self.precendence = 10
+        super(CosNode,self).__init__(invoer, 'cos')
+    
+    #Geef de afgeleide terug
+    def dif(self,leaf=False):
+        return NegNode(SinNode(self.invoer))*self.invoer.dif()  
+
+# Een subclass van functionnode
+class ExpNode(FunctionNode):
+    
+    #De operatie is exp met een maximale precendence
+    def __init__(self, invoer):
+        self.operatie =  math.exp
+        self.precendence = 10
+        super(ExpNode,self).__init__(invoer, 'exp')
+    
+    #Geef de afgeleide terug
+    def dif(self,leaf=False):
+        return ExpNode(self.invoer)*self.invoer.dif() 
+    
+# De standaard node is een binarynode, hier zijn de meeste en meest uitgebreidde
+# functionaliteiten te vinden
 class BinaryNode(Expression):
     
     #A node in the expression tree representing a binary operator.
-    # order_op = {'+':[1,True],'-':[1,False], '*':[2,True], '/':[2,False],'**':[3,False],'~':[4,False]}
-
-    #initialisatie van BinaryNode
-    def __init__(self, lhs, rhs, op_symbol):
+    def __init__(self, lhs, rhs, op_symbol,precedence,commutatief):
         self.lhs = lhs
         self.rhs = rhs
         self.op_symbol = op_symbol
-        self.precendence = self.precendence
-        self.associatief = self.associatief
-        
-        # print(self.precendence , "precendence", op_symbol, self.associatief)
-        
-    
+        self.precedence = precedence
+        self.commutatief = commutatief
+
     #overloarden bij een gelijk teken
     def __eq__(self, other):
         if type(self) == type(other):
@@ -365,49 +395,26 @@ class BinaryNode(Expression):
         zijde = 0 #administreer of we de linker of rechter zijde bekijken (0 = lhs)
         #ga beide kanten langs en ga na of deze kant haakjes nodig heeft
         
-        
-        
-        
         for side in [self.lhs, self.rhs]:
             
            
             # is het een binarynode? bepaal de operatie orde een laag naar beneden en de huidige operatieorde
-            # bepaal ook of de huidige operatie associatief is
-            if isinstance(self,BinaryNode):
-                
-                order_lower = side.precendence
-                order_this = self.precendence
-                this_ass =  self.associatief
-                # print(order_lower)
-                # print(order_this)
-                # print(order_lower, order_this)
-                # if order_lower != 10:
-                    # print(side , "side",self.lhs,"self.lhs", self.rhs)
-                    # print(side.op_symbol)
-                    # print(self.op_symbol)
-                # print(order_this)    
-                    # print(uitvoer)
+            # bepaal ook of de huidige operatie commutatief is
+            if True:
+                # print(side,"zijde")
+                order_lower = side.precedence
+                order_this = self.precedence
+                this_ass =  self.commutatief
                 
                 
                 #indien ofwel orde 1 laag dieper minder groot is dan de huidige, dan zijn haakjes nodig
-                #haakjes zijn ook nodig als de huidige operatie niet associatief is 
+                #haakjes zijn ook nodig als de huidige operatie niet commutatief is 
                 if order_lower < order_this or (not this_ass and order_lower == order_this and zijde ==1):
                     
                     uitvoer = uitvoer + "(%s)" % (str(side))
                     
                 else:
                     uitvoer = uitvoer + str(side)
-            
-            
-                    
-            elif isinstance(self, NegNode):
-                print ("negnode")
-           
-            
-            
-            # geen binarynode? Dan kan tostring worden aangeroepen
-            
-                
             
             # als de huidige zijde de lhs is, dan moet het operatiesymbool worden toegevoegd    
             if zijde == 0:
@@ -420,31 +427,135 @@ class BinaryNode(Expression):
 
     #Evaluatie functie
     def evaluate(self, variabelen={}):
-
+        
         #bepaal de waarden van lhs en de rhs, neem daarin de ingevulde variable waarden mee
         getal1 = self.lhs.evaluate(variabelen)
         getal2 = self.rhs.evaluate(variabelen)
+        this_symbol = self.op_symbol
+        this_order = self.precedence 
+
+        #Controleren op en verwijderen van nullen in verschillende vormen, en 
+        #gevallen iets * 1 -> iets
+        welke = 1
+
+        for getal in [getal1, getal2]:
+            #Verwijderen van nullen
+            if getal == Constant(0):
+                #Nullen in een + en - worden verwijderd
+                if this_symbol == '+':
+                    return eval("getal" + str(welke%2 + 1))
+                elif this_symbol == '-':    
+                    if welke == 1:
+                        return NegNode(getal2)
+                    else:
+                        return getal1
+                #bij * en / wordt het 0
+                elif this_symbol == '*':
+                    return Constant(0)
+                elif this_symbol == '/':
+                    if welke == 1:
+                        return Constant(0)
+                #een macht wordt 1 of 0
+                elif this_symbol == '**':
+                    if welke == 1:
+                        return Constant(0)
+                    else:
+                        return Constant(1)
+            
+            #verwijderen van enen
+            elif getal == Constant(1):
+                if this_symbol == '*':
+                    return eval("getal" + str(welke%2 + 1))
+                elif this_symbol == '/':
+                    if welke == 2:
+                        return getal1
+                elif this_symbol == '**':
+                    if welke == 1:
+                        return Constant(1)
+                    else:
+                        return getal1
+            
+            #volgende zijde
+            welke = welke + 1
 
         #Als een van de twee géén constante is, dan is 1 van de twee ofwel een variabele, ofwel
         #een compound expressie met een variabele er in. Dit kan dan niet als getal geevalueerd worden
         if not isinstance(getal1,Constant):
-            return BinaryNode(getal1,getal2,self.op_symbol)
+            return BinaryNode(getal1,getal2,this_symbol,self.precedence,self.commutatief)
         elif not isinstance(getal2,Constant):
-            return BinaryNode(getal1,getal2,self.op_symbol)
+            return BinaryNode(getal1,getal2,this_symbol,self.precedence,self.commutatief)
             
         #Wel twee constanten? Voer de operatie uit en maak een nieuwe constante aan
         else:
-            # print('%s %s %s' % (getal1.constantvalue(), self.op_symbol, getal2.constantvalue()))
-            ans = Constant(eval('%s %s %s' % (getal1.constantvalue(), self.op_symbol, getal2.constantvalue())))
+            return Constant(eval('%s %s %s' % (getal1.value, self.op_symbol, getal2.value)))
+        
+    #Differentiatie
+    def dif(self, leaf=False):
+        
+        order_this = self.precedence
+        
+        #Kettingregel. De verschillende elementen worden los van elkaar aangemaakt. Dus eerst f(x) en x'
+        # en dan het product
+        if (self.op_symbol == '**' and not (isinstance(self.lhs,Constant) or isinstance(self.lhs,Variable))):
+            macht = PowNode(self.lhs,Constant(self.rhs.value - 1))
+            product = MulNode(self.rhs,macht)
+            left = self.lhs.dif()
+            toreturn = MulNode(product,left)
             
-            return ans
-        
-    
-    
-        
-        
-        
+        #Productregel. Analoog aan kettingregel. Eerst f'(x) en g'(x). Dan f(x)g'(x) en f'(x)g(x) en dan 
+        # de som
+        elif (self.op_symbol == '*' and not (isinstance(self.lhs,Constant) or isinstance(self.rhs,Constant))):
+            afgeleide1 = self.lhs.dif(True)
+            afgeleide2 = self.rhs.dif(True)
+            product1 = MulNode(afgeleide1,self.rhs)
+            product2 = MulNode(self.lhs,afgeleide2)
+            toreturn = AddNode(product1,product2)
+            
+        #Geen kettingregel of productregel
+        else:
+            left = self.lhs.dif(False)
+            right = self.rhs.dif(False)
+            order_this = self.precedence
+            toreturn = False   
 
+        # Nu volgt het afleiden van simpele polynomiale expressies
+        # Voor de lhs geldt:
+        if type(toreturn) == bool:
+            if isinstance(left,Constant):
+                if order_this == 1:
+                    left = Constant(0)
+                elif order_this == 2 and isinstance(right,Constant): 
+                    toreturn = Constant(0)
+                #elif right is variabele of binarynode, dan niet veranderen    
+                elif order_this == 3:
+                    #we staan geen 2^x toe op dit moment, dus is het een getal
+                    toreturn = Constant(0) 
+            elif isinstance(left,Variable):
+                if order_this == 1 or order_this == 2:
+                    #we staan nog geen productregel toe, dus rechts is een constante
+                    left = Constant(1)
+                else: #orderthis == 3
+                    macht = PowNode(left,Constant(right.value -1))
+                    toreturn = MulNode(right,macht)
+                    
+        # Voor de rhs geldt:
+        if type(toreturn) == bool:
+            if isinstance(right,Constant):
+                if order_this == 1:
+                    right = Constant(0)
+                #elif order_this == 3 of 2: dit is al gereturned of hoeft niet veranderd
+            elif isinstance(right,Variable):
+                if order_this == 1 or order_this == 2:
+                    right = Constant(1)
+                #else: #orderthis == 3 machtfunctie zijn nog niet toegestaan
+        
+        # Indien de toreturn niet al is gedefinieed
+        if type(toreturn) == bool:
+            toreturn = BinaryNode(left,right,self.op_symbol, self.precedence,self.commutatief)
+        # Eindresultaat teruggeven
+        return toreturn
+        
+        
     
     #Numerieke integratie
     def numIntegrate(self,variables,intervals):
@@ -514,7 +625,7 @@ class BinaryNode(Expression):
     
     #Nulpunt vinden op gespecificeerd interval
     def findRoot(self,expression,variable,interval):
-        if expression.evaluate({variable:interval[0]}).constantvalue()<expression.evaluate({variable:interval[1]}).constantvalue():
+        if expression.evaluate({variable:interval[0]}).value<expression.evaluate({variable:interval[1]}).value:
             a = interval[0]
             b = interval[1]
         else:
@@ -527,7 +638,7 @@ class BinaryNode(Expression):
         if abs(b-a)<=delta:
             return m
         
-        if expression.evaluate({variable:m}).constantvalue()<=0:
+        if expression.evaluate({variable:m}).value<=0:
             newinterval = [m,b]
             return self.findRoot(expression,variable,newinterval)
         else:
@@ -538,10 +649,10 @@ class BinaryNode(Expression):
     def numSolver(self,left,right,variable,interval):
         epsilon = 0.01
         solutions = []
-        nulexpression = BinaryNode(left, right, '-')
+        nulexpression = SubNode(left, right) #KOEN WERKT DIT WANT WAT ER STOND ER NIET
         i = interval[0]
         while i+epsilon<=interval[1]:
-            if (nulexpression.evaluate({variable:i}).constantvalue()<=0 and nulexpression.evaluate({variable:i+epsilon}).constantvalue()>=0) or (nulexpression.evaluate({variable:i}).constantvalue()>=0 and nulexpression.evaluate({variable:i+epsilon}).constantvalue()<=0):
+            if (nulexpression.evaluate({variable:i}).value<=0 and nulexpression.evaluate({variable:i+epsilon}).value>=0) or (nulexpression.evaluate({variable:i}).value>=0 and nulexpression.evaluate({variable:i+epsilon}).value<=0):
                 nul = self.findRoot(nulexpression,variable,[i,i+epsilon])
                 solutions.append(nul)
             i += epsilon
@@ -553,48 +664,46 @@ class AddNode(BinaryNode):
     """Represents the addition operator"""
     
     def __init__(self, lhs, rhs):
-        self.precendence = 1
-        self.associatief = True
-        super(AddNode, self).__init__(lhs, rhs, '+')
-
+        self.precedence = 1 #meegeven van de precendence en associativiteit
+        self.commutatief = True
+        self.op_symbol = '+'
+        super(AddNode, self).__init__(lhs, rhs,self.op_symbol,self.precedence,self.commutatief)
+    
+    
+#onderstaande functies zijn extra maar analoog aan addnode
 class SubNode(BinaryNode):
     """Represents the subtraction operator"""
-
+    
     def __init__(self, lhs, rhs):
-        self.precendence = 1
-        self.associatief = False
-        super(SubNode, self).__init__(lhs, rhs , '-')
+        self.precedence = 1
+        self.commutatief = False
+        self.op_symbol = '-'
+        super(SubNode, self).__init__(lhs, rhs , self.op_symbol,self.precedence,self.commutatief)
         
 
 class DivNode(BinaryNode):
     """Represents the division operator"""
-
+    
     def __init__(self, lhs, rhs):
-        self.precendence = 2
-        self.associatief = False
-        super(DivNode, self).__init__(lhs, rhs , '/')
+        self.precedence = 2
+        self.commutatief = False
+        self.op_symbol = '/'
+        super(DivNode, self).__init__(lhs, rhs , self.op_symbol,self.precedence,self.commutatief)
 
 class MulNode(BinaryNode):
     """Represents the multiplication operator"""
 
     def __init__(self, lhs, rhs):
-        self.precendence = 2
-        self.associatief = True
-        super(MulNode, self).__init__(lhs, rhs , '*')
+        self.precedence = 2
+        self.commutatief = True
+        self.op_symbol = '*'
+        super(MulNode, self).__init__(lhs, rhs ,self.op_symbol,self.precedence,self.commutatief)
 
 class PowNode(BinaryNode):
     """Represents the power operator"""
-
+    
     def __init__(self, lhs, rhs):
-        self.precendence = 3
-        self.associatief = False
-        super(PowNode, self).__init__(lhs, rhs , '**')
-        
-
-
-        
-
-
-        
-
-     
+        self.precedence = 3
+        self.commutatief = False
+        self.op_symbol = '**'
+        super(PowNode, self).__init__(lhs, rhs , self.op_symbol,self.precedence,self.commutatief)
