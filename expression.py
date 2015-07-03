@@ -713,20 +713,26 @@ class BinaryNode(Expression):
     
     #Nulpunt vinden op gespecificeerd interval
     def findRoot(self,expression,variable,interval):
-        if expression.evaluate({variable:interval[0]}).value<expression.evaluate({variable:interval[1]}).value:
+        #zorgen dat de functie altijd stijgt bekeken van a naar b
+        if expression.evaluate({variable:interval[0]}).constantvalue()<expression.evaluate({variable:interval[1]}).constantvalue():
             a = interval[0]
             b = interval[1]
         else:
             a = interval[1]
             b = interval[0]
         
+        #middelpunt definieren
         m = (a+b)/2
+        #definieren hoe precies het nulpunt moet worden gevonden
         delta = 0.0001
         
+        #m als output geven indien het interval te klein is geworden
         if abs(b-a)<=delta:
             return m
         
-        if expression.evaluate({variable:m}).value<=0:
+        #bekijken aan welke kant van het middelpunt het nulpunt ligt
+        #de functie findRoot opnieuw runnen voor een half zo groot interval
+        if expression.evaluate({variable:m}).constantvalue()<=0:
             newinterval = [m,b]
             return self.findRoot(expression,variable,newinterval)
         else:
@@ -735,12 +741,15 @@ class BinaryNode(Expression):
     
     #Numeriek vergelijkingen oplossen
     def numSolver(self,left,right,variable,interval):
+        #definieren hoe precies nulpunten van elkaar onderscheiden moeten worden
         epsilon = 0.01
         solutions = []
-        nulexpression = SubNode(left, right) #KOEN WERKT DIT WANT WAT ER STOND ER NIET
+        #een kant van de vergelijking gelijk stellen aan nul
+        nulexpression = SubNode(left, right)
         i = interval[0]
+        #findRoot toepassen op alle intervallen die een nulpunt moeten bevatten
         while i+epsilon<=interval[1]:
-            if (nulexpression.evaluate({variable:i}).value<=0 and nulexpression.evaluate({variable:i+epsilon}).value>=0) or (nulexpression.evaluate({variable:i}).value>=0 and nulexpression.evaluate({variable:i+epsilon}).value<=0):
+            if (nulexpression.evaluate({variable:i}).constantvalue()<=0 and nulexpression.evaluate({variable:i+epsilon}).constantvalue()>=0) or (nulexpression.evaluate({variable:i}).constantvalue()>=0 and nulexpression.evaluate({variable:i+epsilon}).constantvalue()<=0):
                 nul = self.findRoot(nulexpression,variable,[i,i+epsilon])
                 solutions.append(nul)
             i += epsilon
