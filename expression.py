@@ -97,58 +97,67 @@ class Expression():
         Nodes = [AddNode,SubNode,DivNode,MulNode,PowNode,NegNode]
         
         
-        #hier wordt een lijst gemaakt met de precedence en associativeit
+        #hier wordt een lijst gemaakt met de precedence en associativiteit
         order_op = {}
         for node in Nodes:
             if node == NegNode:
                 a = node(0)
-                order_op[a.op_symbol]=[a.precedence,a.associativeit]
+                order_op[a.op_symbol]=[a.precedence,a.associativiteit]
             else:
                 a = node(0,0)
-                order_op[a.op_symbol]=[a.precedence,a.associativeit]
+                order_op[a.op_symbol]=[a.precedence,a.associativiteit]
         
         
-        
+        # het getal i geeft aan om welke token het gaat
         i = 0 
         
         while i< len(tokens):
+            
+            # als de huidige token een getal is wordt deze direct naar de output gestuurd
             if isnumber(tokens[i]):
-                # numbers go directly to the output
                 if isint(tokens[i]):
                     output.append(Constant(int(tokens[i])))
                 else:
                     output.append(Constant(float(tokens[i])))
                     
+            # als de token in de lijst met functies staat dan wordt deze naar de stack gestuurd        
+            
             elif tokens[i] in funclist:
-                #Binnen haakjes moet gezien owrden als de invoer van een functie
                 stack.append(tokens[i])
                 
-                    
+            # als de token een operator is moeten verschillende dingen worden gecontroleerd
+            
             elif tokens[i] in oplist:
                 if tokens[i] == '-' and (
                     tokens[i-1] in oplist + ['('] or len(output)==0):  
+                    # we hebben gecontroleerd of het minnetje wat we tegen komen een negate is, 
+                    # als dit het geval is sturen we negate naar de stack
                     stack.append('~')    
                 else:  
+                    # als de operator geen negate is dan wordt hier bepaald in welke volgorde de operatoren naar de output moeten
                     while True:
+                        #als er niks in de stack zit dan moet de operator sowieso naar de stack
                         if len(stack) == 0 or stack[-1] not in oplist+['~']:
                             break
                         
-                        # Shunting Yard algoritme
+                        # Shunting Yard algoritme, met de regels van de volgorde van operaties wordt bepaald
+                        # wanneer operatoren van de stack naar de output moeten
                         elif (order_op[tokens[i]][1]==0 and order_op[tokens[i]][0] <= order_op[stack[-1]][0]
                             ) or (order_op[tokens[i]][1]==1 and order_op[tokens[i]][0]<order_op[stack[-1]][0]):
                             
                             output.append(stack.pop())
                         else:
                             break
+                    # de huidige token wordt altijd naar de stack gestuurd
                     stack.append(tokens[i])
                    
 
             elif tokens[i] == '(':
-                # left parantheses go to the stack
+                # linker haakjes gaan naar de stack
                 stack.append(tokens[i])
                 
             elif tokens[i] == ')':
-                # right paranthesis: pop everything upto the last left paranthesis to the output
+                # rechter haakje: pop alles van de stack naar de outpu totdat we een linkerhaakje tegen komen
                 while not stack[-1] == '(':
                     output.append(stack.pop())
                 
@@ -156,7 +165,8 @@ class Expression():
                 stack.pop()
                 if len(stack)> 0 and stack[-1] in funclist:
                     output.append(stack.pop())
-                
+            
+            #als de token geen getal, operator, haakje of functie is is het een variabele
             else:
                 output.append(Variable(tokens[i]))
             
@@ -175,13 +185,14 @@ class Expression():
                 x = stack.pop()
                 stack.append(eval('x %s y' % t))
             elif t in funclist:
+                # functies zijn UnaryNodes en werken maar op 1 getal
                 x = stack.pop()
                 Node = funcuitvoer[t]
                 stack.append(Node(x))
             elif t =='~':
+                # negnodes werken op 1 getal en worden hier uitgevoerd
                 y = stack.pop()
                 stack.append(NegNode(y))
-            # elif t in neglist and stack[-1] in oplist:
                     
             else:
                 # a constant, push it to the stack
