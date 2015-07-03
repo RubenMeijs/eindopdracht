@@ -292,7 +292,7 @@ class NegNode(Expression):
         self.invoer = invoer
         self.op_symbol = '~'
         self.precedence = 3
-
+        self.associativiteit = 1
     #printen. Indien de precedence van de invoer lager is, dan zijn er haakjes nodig
     def __str__(self):
         if self.invoer.precedence < self.precedence:
