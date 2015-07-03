@@ -96,19 +96,18 @@ class Expression():
         # order_op index 0 is order, index 1 is associativity (0=left, 1=right)
         Nodes = [AddNode,SubNode,DivNode,MulNode,PowNode,NegNode]
         
+        
+        #hier wordt een lijst gemaakt met de precedence en associativeit
         order_op = {}
         for node in Nodes:
             if node == NegNode:
                 a = node(0)
-                order_op[a.op_symbol]=a.precedence
+                order_op[a.op_symbol]=[a.precedence,a.associativeit]
             else:
                 a = node(0,0)
-                order_op[a.op_symbol]=a.precedence
+                order_op[a.op_symbol]=[a.precedence,a.associativeit]
         
         
-        # print(order_op)
-        
-        order_op = {'+':[1,0],'-':[1,0], '*':[2,0], '/':[2,0],'**':[3,1],  '~':[3,1]}
         
         i = 0 
         
@@ -745,6 +744,7 @@ class AddNode(BinaryNode):
         self.precedence = 1 #meegeven van de precendence en associativiteit
         self.commutatief = True
         self.op_symbol = '+'
+        self.associativiteit = 0
         super(AddNode, self).__init__(lhs, rhs,self.op_symbol,self.precedence,self.commutatief)
     
     
@@ -756,6 +756,7 @@ class SubNode(BinaryNode):
         self.precedence = 1
         self.commutatief = False
         self.op_symbol = '-'
+        self.associativiteit = 0
         super(SubNode, self).__init__(lhs, rhs , self.op_symbol,self.precedence,self.commutatief)
         
 
@@ -766,6 +767,7 @@ class DivNode(BinaryNode):
         self.precedence = 2
         self.commutatief = False
         self.op_symbol = '/'
+        self.associativiteit = 0
         super(DivNode, self).__init__(lhs, rhs , self.op_symbol,self.precedence,self.commutatief)
 
 class MulNode(BinaryNode):
@@ -775,6 +777,7 @@ class MulNode(BinaryNode):
         self.precedence = 2
         self.commutatief = True
         self.op_symbol = '*'
+        self.associativiteit = 0
         super(MulNode, self).__init__(lhs, rhs ,self.op_symbol,self.precedence,self.commutatief)
 
 class PowNode(BinaryNode):
@@ -784,4 +787,5 @@ class PowNode(BinaryNode):
         self.precedence = 3
         self.commutatief = False
         self.op_symbol = '**'
+        self.associativiteit = 1
         super(PowNode, self).__init__(lhs, rhs , self.op_symbol,self.precedence,self.commutatief)
